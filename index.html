@@ -112,10 +112,8 @@
         .move-btn-done { background-color: #bbf7d020; color: #15803d; border-color: #86efac80; }
         .archive-btn { background-color: #e2e8f020; color: #4a5568; border-color: #cbd5e080; }
 
-        /* .task-actions .edit-btn { color: #3b82f6; } */ /* Edit button removed from direct task view */
         .task-actions .pin-btn { color: #a16207; } /* Tailwind amber-700 for pin */
         .task-actions .pin-btn.pinned { color: #f59e0b; } /* Tailwind amber-500 for pinned */
-        /* .task-actions .edit-btn:hover { background-color: #dbeafe; } */
         .task-actions .pin-btn:hover { background-color: #fef3c7; } /* Tailwind amber-100 for hover */
 
 
@@ -171,6 +169,8 @@
             width: 32px; height: 32px; margin-bottom: 0.5rem; opacity: 0.6;
         }
         .task-actions svg, .task-move-actions svg { width: 16px; height: 16px; }
+        #bottomSheetOptionsList button svg { width: 20px; height: 20px; } /* Style for icons in bottom sheet */
+
         #attachmentPreview {
             max-width: 100px; max-height: 100px; margin-top: 5px;
             border: 1px solid #ccc; display: none;
@@ -1395,6 +1395,35 @@
             draggedItem = null;
         }
 
+        // Helper function to create buttons with icons and text for the bottom sheet
+        function createButtonWithIconAndText(iconSvgString, text, onClickCallback, additionalClasses = []) {
+            const button = document.createElement('button');
+            button.classList.add('flex', 'items-center', 'w-full'); // Ensure full width and flex for alignment
+            additionalClasses.forEach(cls => button.classList.add(cls));
+
+            if (iconSvgString) {
+                const svgContainer = document.createElement('div'); 
+                svgContainer.innerHTML = iconSvgString.trim(); 
+                const svgElement = svgContainer.firstChild;
+                if (svgElement) {
+                    // Ensure SVG has a size, e.g., by adding Tailwind classes or inline style if needed
+                    // For now, assuming the SVG's viewBox and the parent's flex properties handle alignment.
+                    // You might want to add fixed width/height to the SVG or its container span if issues persist.
+                    // e.g., svgElement.classList.add('w-5', 'h-5');
+                    button.appendChild(svgElement);
+                }
+            }
+
+            const textSpan = document.createElement('span');
+            textSpan.classList.add('ml-2'); // Margin to the left of the text, after the icon
+            textSpan.textContent = text;
+            button.appendChild(textSpan);
+
+            button.onclick = onClickCallback;
+            return button;
+        }
+
+
         function openMoveTaskBottomSheet(taskData) { 
             currentTaskForBottomSheet = taskData; 
             if (!bottomSheetOptionsList || !moveTaskBottomSheet || !bottomSheetOverlay) return;
@@ -1402,69 +1431,56 @@
             bottomSheetOptionsList.innerHTML = ''; 
             
             // Add Edit option first
-            const editSheetButton = document.createElement('button');
-            editSheetButton.innerHTML = `${iconEdit} <span class="ml-2">Sửa ghi chú</span>`; // Add icon
-            editSheetButton.classList.add('flex', 'items-center');
-            editSheetButton.onclick = () => {
+            const editSheetButton = createButtonWithIconAndText(iconEdit, 'Sửa ghi chú', () => {
                 if (currentTaskForBottomSheet) {
                     openTaskModal(currentTaskForBottomSheet);
                 }
                 closeMoveTaskBottomSheet();
-            };
+            });
             bottomSheetOptionsList.appendChild(editSheetButton);
 
 
             const destinations = [
-                { id: 'todo', name: 'Cần làm' },
-                { id: 'inprogress', name: 'Đang làm' },
-                { id: 'done', name: 'Hoàn thành' }
+                { id: 'todo', name: 'Cần làm', icon: iconArrowLeft }, 
+                { id: 'inprogress', name: 'Đang làm' }, 
+                { id: 'done', name: 'Hoàn thành', icon: iconCheck }
             ];
 
             destinations.forEach(dest => {
                 if (dest.id !== taskData.status) {
-                    const button = document.createElement('button');
-                    // Add icons to move buttons in bottom sheet for consistency
-                    let iconHTML = '';
-                    if (dest.id === 'todo') iconHTML = iconArrowLeft;
-                    else if (dest.id === 'inprogress') iconHTML = (taskData.status === 'todo' || taskData.status === 'done') ? iconArrowRight : iconArrowLeft; // Simplified logic
-                    else if (dest.id === 'done') iconHTML = iconCheck;
-
-                    button.innerHTML = `${iconHTML} <span class="ml-2">Chuyển sang ${dest.name}</span>`;
-                    button.classList.add('flex', 'items-center');
-                    button.onclick = async () => {
+                    let iconForMove = dest.icon; // Use pre-defined icon if available
+                    if (dest.id === 'inprogress') { // Special logic for inprogress icon
+                        iconForMove = (taskData.status === 'todo' || taskData.status === 'done') ? iconArrowRight : iconArrowLeft;
+                    }
+                    
+                    const moveButton = createButtonWithIconAndText(iconForMove, `Chuyển sang ${dest.name}`, async () => {
                         if (currentTaskForBottomSheet) {
                             await moveTask(currentTaskForBottomSheet.id, dest.id);
                         }
                         closeMoveTaskBottomSheet();
-                    };
-                    bottomSheetOptionsList.appendChild(button);
+                    });
+                    bottomSheetOptionsList.appendChild(moveButton);
                 }
             });
 
             if (taskData.status === 'done') {
-                const archiveButton = document.createElement('button');
-                archiveButton.innerHTML = `${iconArchive} <span class="ml-2">Lưu trữ ghi chú</span>`;
-                archiveButton.classList.add('flex', 'items-center');
-                archiveButton.onclick = async () => {
+                const archiveButton = createButtonWithIconAndText(iconArchive, 'Lưu trữ ghi chú', async () => {
                     if (currentTaskForBottomSheet) {
                         await archiveTask(currentTaskForBottomSheet.id);
                     }
                     closeMoveTaskBottomSheet();
-                };
+                });
                 bottomSheetOptionsList.appendChild(archiveButton);
             }
 
-            const deleteSheetButton = document.createElement('button');
-            deleteSheetButton.innerHTML = `${iconDelete} <span class="ml-2">Xóa ghi chú</span>`;
-            deleteSheetButton.classList.add('delete-option-sheet', 'flex', 'items-center'); 
-            deleteSheetButton.onclick = async () => {
+            const deleteSheetButton = createButtonWithIconAndText(iconDelete, 'Xóa ghi chú', async () => {
                 if (currentTaskForBottomSheet) {
                     if (await showCustomConfirm("Bạn có chắc chắn muốn xóa ghi chú này không? Hành động này không thể hoàn tác.")) {
                         await deleteTask(currentTaskForBottomSheet.id, currentTaskForBottomSheet.attachmentPath);
                     }
                 }
                 closeMoveTaskBottomSheet();
-            };
+            }, ['delete-option-sheet']); 
             bottomSheetOptionsList.appendChild(deleteSheetButton);
 
 
