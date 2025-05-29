@@ -288,6 +288,14 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .column-header-count {
+            font-size: 0.875rem; /* text-sm */
+            color: #4a5568; /* gray-700 */
+            background-color: #e2e8f0; /* gray-200 */
+            padding: 0.125rem 0.5rem; /* py-0.5 px-2 */
+            border-radius: 9999px; /* rounded-full */
+            margin-left: 0.5rem; /* ml-2 */
+        }
 
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -341,15 +349,24 @@
 
         <div id="appContent" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             <div id="todo" class="bg-rose-100 p-4 rounded-lg shadow-lg kanban-column" data-status="todo">
-                <h2 class="text-xl font-semibold text-rose-700 mb-4 border-b-2 border-rose-300 pb-2">Cần làm</h2>
+                <h2 class="text-xl font-semibold text-rose-700 mb-4 border-b-2 border-rose-300 pb-2 flex justify-between items-center">
+                    <span>Cần làm</span>
+                    <span id="todo-count" class="column-header-count">0</span>
+                </h2>
                 <div id="todo-tasks" class="space-y-3 task-list min-h-[100px]"></div>
             </div>
             <div id="inprogress" class="bg-amber-100 p-4 rounded-lg shadow-lg kanban-column" data-status="inprogress">
-                <h2 class="text-xl font-semibold text-amber-700 mb-4 border-b-2 border-amber-300 pb-2">Đang làm</h2>
+                <h2 class="text-xl font-semibold text-amber-700 mb-4 border-b-2 border-amber-300 pb-2 flex justify-between items-center">
+                    <span>Đang làm</span>
+                    <span id="inprogress-count" class="column-header-count">0</span>
+                </h2>
                 <div id="inprogress-tasks" class="space-y-3 task-list min-h-[100px]"></div>
             </div>
             <div id="done" class="bg-green-100 p-4 rounded-lg shadow-lg kanban-column" data-status="done">
-                <h2 class="text-xl font-semibold text-green-700 mb-4 border-b-2 border-green-300 pb-2">Hoàn thành</h2>
+                <h2 class="text-xl font-semibold text-green-700 mb-4 border-b-2 border-green-300 pb-2 flex justify-between items-center">
+                    <span>Hoàn thành</span>
+                    <span id="done-count" class="column-header-count">0</span>
+                </h2>
                 <div id="done-tasks" class="space-y-3 task-list min-h-[100px]"></div>
             </div>
         </div>
@@ -450,11 +467,9 @@
         let currentEditTaskId = null; 
         let currentTaskDataForEdit = null; 
         
-        // Khai báo confettiColors ở phạm vi toàn cục của module, sớm hơn
         const confettiColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
-        let confettiCanvas, confettiCtx, confettiParticles = []; // Khai báo biến confetti ở đây
+        let confettiCanvas, confettiCtx, confettiParticles = []; 
 
-        // Thay đổi getTasksCollectionPath thành function declaration để được hoisted
         function getTasksCollectionPath() {
             if (!currentUserId) return null; 
             return `artifacts/${appIdForPath}/users/${currentUserId}/kanbanTasks`;
@@ -465,7 +480,8 @@
             appHeader, logoutBtn, appContent, addTaskBtnContainerDesktop, addTaskBtn, fabAddTaskBtn,
             taskModal, closeModalBtn, saveTaskBtn, taskInput, taskDueDateInput, taskPriorityInput,
             taskAttachmentInput, attachmentPreview, currentAttachmentInfo, currentAttachmentLink,
-            removeAttachmentBtn, uploadSpinner, modalTitle;
+            removeAttachmentBtn, uploadSpinner, modalTitle,
+            todoCountSpan, inprogressCountSpan, doneCountSpan; // Thêm biến cho các span đếm
         
         let columns = {};
         let columnElements = [];
@@ -519,12 +535,14 @@
             };
             columnElements = document.querySelectorAll('.kanban-column');
 
-            // Khởi tạo confetti canvas và context ở đây
+            todoCountSpan = document.getElementById('todo-count');
+            inprogressCountSpan = document.getElementById('inprogress-count');
+            doneCountSpan = document.getElementById('done-count');
+
             confettiCanvas = document.getElementById('confettiCanvas');
-            if (confettiCanvas) { // Kiểm tra null trước khi lấy context
+            if (confettiCanvas) { 
                  confettiCtx = confettiCanvas.getContext('2d');
             }
-
 
             if (loginBtn) loginBtn.addEventListener('click', async () => { 
                 const email = emailInput.value;
@@ -825,8 +843,23 @@
             const q = query(collection(db, tasksCollectionPath), where("userId", "==", currentUserId), orderBy("order", "asc")); 
 
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
+                let taskCounts = { todo: 0, inprogress: 0, done: 0 };
                 Object.values(columns).forEach(colDiv => { if (colDiv) colDiv.innerHTML = ''; }); 
-                snapshot.forEach((docSnap) => renderTask({ id: docSnap.id, ...docSnap.data() }));
+                
+                snapshot.forEach((docSnap) => {
+                    const taskData = { id: docSnap.id, ...docSnap.data() };
+                    renderTask(taskData);
+                    if (taskCounts.hasOwnProperty(taskData.status)) {
+                        taskCounts[taskData.status]++;
+                    }
+                });
+
+                // Cập nhật số lượng task trên header cột
+                if(todoCountSpan) todoCountSpan.textContent = taskCounts.todo;
+                if(inprogressCountSpan) inprogressCountSpan.textContent = taskCounts.inprogress;
+                if(doneCountSpan) doneCountSpan.textContent = taskCounts.done;
+
+
                 Object.entries(columns).forEach(([statusKey, columnDiv]) => {
                     if (columnDiv && columnDiv.children.length === 0) { 
                         const placeholder = document.createElement('div');
@@ -1068,10 +1101,8 @@
         function ConfettiParticle(x, y) {
             this.x = x; this.y = y; this.size = Math.random() * 7 + 3; 
             this.speedX = Math.random() * 6 - 3; this.speedY = Math.random() * -15 - 5; 
-            // Sử dụng confettiColors đã được khai báo ở phạm vi module
             if (typeof confettiColors === 'undefined' || !Array.isArray(confettiColors) || confettiColors.length === 0) {
-                console.error("confettiColors is not available or empty in ConfettiParticle!");
-                this.color = '#000000'; // Fallback color
+                this.color = '#000000'; 
             } else {
                 this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
             }
