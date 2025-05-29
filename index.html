@@ -29,8 +29,8 @@
             transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out;
         }
         .task-pinned {
-            background-color: #fef9c3; /* Tailwind yellow-100 for pinned tasks */
-            /* border-left-color: #facc15; */ /* Tailwind yellow-400 for pinned task border */
+            background-color: #fef08a; /* Tailwind yellow-200 for pinned tasks - Made more prominent */
+            /* border-left-color: #facc15; */ /* Optional: Tailwind yellow-400 for pinned task border */
         }
         .task-attachment-preview {
             max-width: 100%;
@@ -112,10 +112,10 @@
         .move-btn-done { background-color: #bbf7d020; color: #15803d; border-color: #86efac80; }
         .archive-btn { background-color: #e2e8f020; color: #4a5568; border-color: #cbd5e080; }
 
-        .task-actions .edit-btn { color: #3b82f6; }
+        /* .task-actions .edit-btn { color: #3b82f6; } */ /* Edit button removed from direct task view */
         .task-actions .pin-btn { color: #a16207; } /* Tailwind amber-700 for pin */
         .task-actions .pin-btn.pinned { color: #f59e0b; } /* Tailwind amber-500 for pinned */
-        .task-actions .edit-btn:hover { background-color: #dbeafe; }
+        /* .task-actions .edit-btn:hover { background-color: #dbeafe; } */
         .task-actions .pin-btn:hover { background-color: #fef3c7; } /* Tailwind amber-100 for hover */
 
 
@@ -188,33 +188,30 @@
 
         /* Tab Styles Updated */
         #kanbanTabs {
-            border-bottom: 1px solid #e2e8f0; /* Keep this for overall structure */
-            background-color: transparent; /* Tab bar transparent, body bg will show or tabs will cover */
-            /* overflow-x: auto; /* Optional: if tabs ever overflow horizontally */
+            border-bottom: 1px solid #e2e8f0;
+            background-color: transparent;
         }
         .tab-button {
             padding: 0.75rem 1rem;
             font-size: 0.875rem;
-            font-weight: 500; /* Base font weight */
-            /* color and background-color will be set by JS */
+            font-weight: 500;
             transition: color 0.2s ease, background-color 0.2s ease;
             flex-grow: 1;
             text-align: center;
             cursor: pointer;
-            border-radius: 6px 6px 0 0; /* Rounded top corners for tab look */
-            margin-right: 2px; /* Small gap between tabs */
-            border-bottom: none; /* Remove explicit bottom border, background indicates active */
+            border-radius: 6px 6px 0 0;
+            margin-right: 2px;
+            border-bottom: none;
         }
         .tab-button:last-child {
             margin-right: 0;
         }
-        /* .active-tab class is no longer used for primary styling of active state, JS handles it */
 
-        .kanban-main-column { /* Default hidden on mobile, JS adds 'block' or 'hidden' */ }
-        @media (max-width: 767px) { /* Below md breakpoint */
-            .kanban-main-column { display: none; /* Default hide columns on mobile */ }
-            .kanban-main-column.active-column-mobile { display: block !important; /* Show active column */ }
-            #appContent { display: block; /* Remove grid on mobile */ }
+        .kanban-main-column { }
+        @media (max-width: 767px) {
+            .kanban-main-column { display: none; }
+            .kanban-main-column.active-column-mobile { display: block !important; }
+            #appContent { display: block; }
         }
 
         /* Bottom Sheet Styles */
@@ -235,11 +232,11 @@
             border: none; background: none; font-size: 1rem; color: #2d3748;
             border-bottom: 1px solid #edf2f7;
         }
-        #bottomSheetOptionsList button.delete-option-sheet { /* Style for delete in sheet */
-            color: #ef4444; /* Red color for delete */
+        #bottomSheetOptionsList button.delete-option-sheet {
+            color: #ef4444;
         }
         #bottomSheetOptionsList button.delete-option-sheet:hover {
-            background-color: #fee2e2; /* Light red hover for delete */
+            background-color: #fee2e2;
         }
         #bottomSheetOptionsList button:last-child { border-bottom: none; }
         #bottomSheetOptionsList button:hover { background-color: #f7fafc; }
@@ -386,7 +383,7 @@
 
     <div id="bottomSheetOverlay"></div>
     <div id="moveTaskBottomSheet">
-        <h4 class="text-lg font-semibold mb-3 text-slate-700">Di chuyển ghi chú đến:</h4>
+        <h4 class="text-lg font-semibold mb-3 text-slate-700">Hành động cho ghi chú:</h4>
         <div id="bottomSheetOptionsList">
             </div>
         <button id="bottomSheetCloseBtn" class="mt-4">Hủy</button>
@@ -447,8 +444,8 @@
         let isAuthReady = false;
         let tasksUnsubscribe = null;
         let currentEditTaskId = null;
-        let currentTaskDataForEdit = null; // Used for modal
-        let currentTaskForBottomSheet = null; // Used for bottom sheet context
+        let currentTaskDataForEdit = null; 
+        let currentTaskForBottomSheet = null; 
 
         const confettiColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
         let confettiCanvas, confettiCtx, confettiParticles = [];
@@ -468,7 +465,7 @@
             viewArchivedBtnDesktop, viewArchivedBtnMobile, archivedTasksModal, closeArchivedModalBtn, archivedTasksList,
             moveTaskBottomSheet, bottomSheetOverlay, bottomSheetOptionsList, bottomSheetCloseBtn,
             kanbanTabsContainer;
-        // let activeBottomSheetTaskId = null; // Replaced by currentTaskForBottomSheet
+
         let tabButtons = [];
         let columnWrappers = {};
 
@@ -485,7 +482,6 @@
         const iconPinSolid = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clip-rule="evenodd" /></svg>`;
 
 
-        // Configuration for tab colors
         const tabColorConfigs = {
             todo: { bg: 'bg-rose-100', text: 'text-rose-700', name: 'Cần làm' },
             inprogress: { bg: 'bg-amber-100', text: 'text-amber-700', name: 'Đang làm' },
@@ -498,7 +494,6 @@
         let currentActiveMobileTabStatus = 'todo';
         const tabOrder = ['todo', 'inprogress', 'done'];
 
-        // Swipe detection variables
         let touchStartX = 0;
         let touchEndX = 0;
         let touchStartY = 0;
@@ -913,7 +908,7 @@
                     taskDataToSave.userId = currentUserId;
                     taskDataToSave.createdAt = Timestamp.now();
                     taskDataToSave.order = Date.now();
-                    taskDataToSave.isPinned = false; // Default for new tasks
+                    taskDataToSave.isPinned = false; 
                     await addDoc(collection(db, tasksCollectionPath), taskDataToSave);
                 }
                 closeAndResetModal();
@@ -936,7 +931,7 @@
             if (!tasksCollectionPath) return;
             const taskRef = doc(db, tasksCollectionPath, taskId);
             try {
-                await updateDoc(taskRef, { status: newStatus, order: Date.now() }); // Reset order when moving columns
+                await updateDoc(taskRef, { status: newStatus, order: Date.now() }); 
                 if (newStatus === 'done') triggerConfetti();
 
                 if (window.innerWidth < 768) {
@@ -956,7 +951,6 @@
             const taskRef = doc(db, tasksCollectionPath, task.id);
             try {
                 await updateDoc(taskRef, { isPinned: !task.isPinned });
-                // UI will update via onSnapshot due to sort order change
             } catch (error) {
                 alert("Lỗi khi ghim/bỏ ghim ghi chú: " + error.message);
             }
@@ -976,7 +970,7 @@
                 await updateDoc(taskRef, {
                     status: 'archived',
                     order: Date.now(),
-                    isPinned: false // Unpin when archiving
+                    isPinned: false 
                 });
                 console.log(`Task ${taskId} archived.`);
             } catch (error) {
@@ -995,7 +989,7 @@
                 await updateDoc(taskRef, {
                     status: 'todo',
                     order: Date.now(),
-                    isPinned: false // Ensure unpinned when unarchiving
+                    isPinned: false 
                 });
                 console.log(`Task ${taskId} unarchived.`);
                 loadAndShowArchivedTasks();
@@ -1080,7 +1074,7 @@
                 const q = query(collection(db, tasksCollectionPath),
                                 where("userId", "==", currentUserId),
                                 where("status", "==", "archived"),
-                                orderBy("order", "desc")); // Pinned status not relevant for archived
+                                orderBy("order", "desc"));
                 const snapshot = await getDocs(q);
 
                 archivedTasksList.innerHTML = '';
@@ -1111,21 +1105,11 @@
                 return;
             }
 
-            // IMPORTANT: This query requires a composite index in Firestore.
-            // The index should be: `kanbanTasks` collection, fields:
-            // 1. `userId` ASCENDING
-            // 2. `status` ASCENDING (or specify individual statuses if using IN for status)
-            // 3. `isPinned` DESCENDING
-            // 4. `order` ASCENDING
-            // If you use `where("status", "in", ["todo", "inprogress", "done"])`,
-            // Firestore might require separate indexes for each status in the 'in' clause or a more complex setup.
-            // For simplicity, let's assume 'status' is part of the index.
-            // The console will show a link to create the index if it's missing.
             const q = query(collection(db, tasksCollectionPath),
                             where("userId", "==", currentUserId),
                             where("status", "in", ["todo", "inprogress", "done"]),
-                            orderBy("isPinned", "desc"), // Pinned tasks first
-                            orderBy("order", "asc"));     // Then by user order
+                            orderBy("isPinned", "desc"), 
+                            orderBy("order", "asc"));     
 
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 let taskCounts = { todo: 0, inprogress: 0, done: 0 };
@@ -1168,7 +1152,6 @@
                 if (firestoreErrorElement) firestoreErrorElement.remove();
             }, (error) => {
                 console.error(`Error loading tasks: `, error);
-                // Display error to user, possibly about missing index
                 if (columns.todo) columns.todo.innerHTML = `<p class="text-red-500 p-4">Lỗi tải ghi chú. Có thể bạn cần tạo chỉ mục trong Firestore. Kiểm tra console để biết chi tiết.</p>`;
             });
         }
@@ -1186,7 +1169,7 @@
             taskElement.dataset.isPinned = task.isPinned ? 'true' : 'false';
 
 
-            if (task.priority && !task.isPinned) { // Only apply priority border if not pinned, or choose one visual cue
+            if (task.priority && !task.isPinned) { 
                  taskElement.classList.add(`priority-${task.priority}`);
             } else if (!task.isPinned) {
                  taskElement.classList.add('priority-medium');
@@ -1204,13 +1187,6 @@
             const actionsContainer = document.createElement('div');
             actionsContainer.classList.add('task-actions', 'flex', 'items-center', 'flex-shrink-0');
 
-            const editButton = document.createElement('button');
-            editButton.innerHTML = iconEdit;
-            editButton.classList.add('edit-btn');
-            editButton.title = "Sửa ghi chú";
-            editButton.onclick = (e) => { e.stopPropagation(); openTaskModal(task); };
-            actionsContainer.appendChild(editButton);
-
             const pinButton = document.createElement('button');
             pinButton.classList.add('pin-btn');
             pinButton.innerHTML = task.isPinned ? iconPinSolid : iconPinOutline;
@@ -1225,7 +1201,7 @@
             moreActionsButton.title = "Thêm hành động";
             moreActionsButton.onclick = (e) => {
                 e.stopPropagation();
-                openMoveTaskBottomSheet(task); // Pass the whole task object
+                openMoveTaskBottomSheet(task); 
             };
             actionsContainer.appendChild(moreActionsButton);
 
@@ -1309,9 +1285,7 @@
                 moveActionsContainer.appendChild(moveToInProgressBtn);
             }
 
-            if (task.status === 'done') {
-                // Archive button is now in bottom sheet for 'done' tasks
-            } else if (task.status !== 'done') {
+            if (task.status !== 'done') { // Show "Move to Done" unless it's already done
                 const moveToDoneBtn = document.createElement('button');
                 moveToDoneBtn.innerHTML = iconCheck;
                 moveToDoneBtn.classList.add('move-btn-done');
@@ -1319,6 +1293,7 @@
                 moveToDoneBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'done'); };
                 moveActionsContainer.appendChild(moveToDoneBtn);
             }
+
 
             if (moveActionsContainer.hasChildNodes()) taskElement.appendChild(moveActionsContainer);
 
@@ -1358,7 +1333,7 @@
             const draggedItemId = draggedItem.dataset.id;
             const originalStatus = draggedItem.dataset.status;
             const newStatus = targetColumnWrapper.dataset.status;
-            const isPinned = draggedItem.dataset.isPinned === 'true'; // Get pinned status
+            const isPinned = draggedItem.dataset.isPinned === 'true'; 
 
             draggedItem.classList.remove('dragging');
             let newOrder;
@@ -1372,7 +1347,6 @@
                 let nextSibling = null;
                 const currentColumnTasksDiv = columns[newStatus];
 
-                // Filter children to only consider tasks with the same pinned status for reordering
                 const siblings = Array.from(currentColumnTasksDiv.children)
                                     .filter(child => child.classList.contains('task') &&
                                                      child !== draggedItem &&
@@ -1390,28 +1364,29 @@
                     const orderOfNextSibling = parseFloat(nextSibling.dataset.order);
                     let orderOfPrevSibling = 0;
                     let tempPrev = nextSibling.previousElementSibling;
-                    // Iterate to find the true previous sibling with the same pinned status
                     while(tempPrev && (tempPrev === draggedItem || !tempPrev.classList.contains('task') || (tempPrev.dataset.isPinned === 'true') !== isPinned )) {
                         tempPrev = tempPrev.previousElementSibling;
                     }
 
                     if (tempPrev) {
                          orderOfPrevSibling = parseFloat(tempPrev.dataset.order);
-                    } else { // No previous sibling with same pinned status, place it before nextSibling
-                        orderOfPrevSibling = orderOfNextSibling - 2000; // Ensure it's before
+                    } else { 
+                        orderOfPrevSibling = orderOfNextSibling - 2000; 
                     }
                     newOrder = (orderOfPrevSibling + orderOfNextSibling) / 2;
-                } else { // Dropped at the end of its pinned/unpinned group
+                } else { 
                     if (siblings.length > 0) {
                         newOrder = parseFloat(siblings[siblings.length - 1].dataset.order) + 1000;
-                    } else { // Only item in its pinned/unpinned group
+                    } else { 
                         newOrder = Date.now();
                     }
                 }
                 await updateDoc(taskRef, { order: newOrder });
             } else {
                 newOrder = Date.now();
-                await updateDoc(taskRef, { status: newStatus, order: newOrder, isPinned: false }); // Unpin when moving to a new column for simplicity, or preserve it if desired. Let's unpin.
+                // Decide if task should remain pinned when moved to a new column.
+                // For now, let's unpin it.
+                await updateDoc(taskRef, { status: newStatus, order: newOrder, isPinned: false }); 
                 if (newStatus === 'done') triggerConfetti();
                 if (window.innerWidth < 768) {
                     setActiveTab(newStatus);
@@ -1420,11 +1395,24 @@
             draggedItem = null;
         }
 
-        function openMoveTaskBottomSheet(taskData) { // taskData is the full task object
-            currentTaskForBottomSheet = taskData; // Store the task object
+        function openMoveTaskBottomSheet(taskData) { 
+            currentTaskForBottomSheet = taskData; 
             if (!bottomSheetOptionsList || !moveTaskBottomSheet || !bottomSheetOverlay) return;
 
-            bottomSheetOptionsList.innerHTML = '';
+            bottomSheetOptionsList.innerHTML = ''; 
+            
+            // Add Edit option first
+            const editSheetButton = document.createElement('button');
+            editSheetButton.innerHTML = `${iconEdit} <span class="ml-2">Sửa ghi chú</span>`; // Add icon
+            editSheetButton.classList.add('flex', 'items-center');
+            editSheetButton.onclick = () => {
+                if (currentTaskForBottomSheet) {
+                    openTaskModal(currentTaskForBottomSheet);
+                }
+                closeMoveTaskBottomSheet();
+            };
+            bottomSheetOptionsList.appendChild(editSheetButton);
+
 
             const destinations = [
                 { id: 'todo', name: 'Cần làm' },
@@ -1435,7 +1423,14 @@
             destinations.forEach(dest => {
                 if (dest.id !== taskData.status) {
                     const button = document.createElement('button');
-                    button.textContent = `Chuyển sang ${dest.name}`;
+                    // Add icons to move buttons in bottom sheet for consistency
+                    let iconHTML = '';
+                    if (dest.id === 'todo') iconHTML = iconArrowLeft;
+                    else if (dest.id === 'inprogress') iconHTML = (taskData.status === 'todo' || taskData.status === 'done') ? iconArrowRight : iconArrowLeft; // Simplified logic
+                    else if (dest.id === 'done') iconHTML = iconCheck;
+
+                    button.innerHTML = `${iconHTML} <span class="ml-2">Chuyển sang ${dest.name}</span>`;
+                    button.classList.add('flex', 'items-center');
                     button.onclick = async () => {
                         if (currentTaskForBottomSheet) {
                             await moveTask(currentTaskForBottomSheet.id, dest.id);
@@ -1446,10 +1441,10 @@
                 }
             });
 
-            // Add Archive option if current status is 'done'
             if (taskData.status === 'done') {
                 const archiveButton = document.createElement('button');
-                archiveButton.textContent = 'Lưu trữ ghi chú';
+                archiveButton.innerHTML = `${iconArchive} <span class="ml-2">Lưu trữ ghi chú</span>`;
+                archiveButton.classList.add('flex', 'items-center');
                 archiveButton.onclick = async () => {
                     if (currentTaskForBottomSheet) {
                         await archiveTask(currentTaskForBottomSheet.id);
@@ -1459,10 +1454,9 @@
                 bottomSheetOptionsList.appendChild(archiveButton);
             }
 
-            // Add Delete option
             const deleteSheetButton = document.createElement('button');
-            deleteSheetButton.textContent = 'Xóa ghi chú';
-            deleteSheetButton.classList.add('delete-option-sheet'); // For styling
+            deleteSheetButton.innerHTML = `${iconDelete} <span class="ml-2">Xóa ghi chú</span>`;
+            deleteSheetButton.classList.add('delete-option-sheet', 'flex', 'items-center'); 
             deleteSheetButton.onclick = async () => {
                 if (currentTaskForBottomSheet) {
                     if (await showCustomConfirm("Bạn có chắc chắn muốn xóa ghi chú này không? Hành động này không thể hoàn tác.")) {
@@ -1481,7 +1475,7 @@
         function closeMoveTaskBottomSheet() {
             if (moveTaskBottomSheet) moveTaskBottomSheet.classList.remove('active');
             if (bottomSheetOverlay) bottomSheetOverlay.classList.remove('active');
-            currentTaskForBottomSheet = null; // Clear the stored task
+            currentTaskForBottomSheet = null; 
         }
 
         function resizeConfettiCanvas() {
