@@ -26,11 +26,13 @@
             touch-action: manipulation;
             border-left-width: 4px;
             border-left-color: transparent;
-            transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+            transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            border: 1px solid transparent; /* Base border for transition */
         }
         .task-pinned {
-            background-color: #fef08a; /* Tailwind yellow-200 for pinned tasks - Made more prominent */
-            /* border-left-color: #facc15; */ /* Optional: Tailwind yellow-400 for pinned task border */
+            background-color: #fef08a; /* Tailwind yellow-200 */
+            border: 1px solid #0ea5e9; /* Tailwind sky-500 border for pinned tasks */
+            box-shadow: 0 0 0 2px #0ea5e9; /* Optional: outer glow effect */
         }
         .task-attachment-preview {
             max-width: 100%;
@@ -169,7 +171,7 @@
             width: 32px; height: 32px; margin-bottom: 0.5rem; opacity: 0.6;
         }
         .task-actions svg, .task-move-actions svg { width: 16px; height: 16px; }
-        #bottomSheetOptionsList button svg { width: 20px; height: 20px; } /* Style for icons in bottom sheet */
+        #bottomSheetOptionsList button svg { width: 20px; height: 20px; } 
 
         #attachmentPreview {
             max-width: 100px; max-height: 100px; margin-top: 5px;
@@ -1384,8 +1386,6 @@
                 await updateDoc(taskRef, { order: newOrder });
             } else {
                 newOrder = Date.now();
-                // Decide if task should remain pinned when moved to a new column.
-                // For now, let's unpin it.
                 await updateDoc(taskRef, { status: newStatus, order: newOrder, isPinned: false }); 
                 if (newStatus === 'done') triggerConfetti();
                 if (window.innerWidth < 768) {
@@ -1395,10 +1395,9 @@
             draggedItem = null;
         }
 
-        // Helper function to create buttons with icons and text for the bottom sheet
         function createButtonWithIconAndText(iconSvgString, text, onClickCallback, additionalClasses = []) {
             const button = document.createElement('button');
-            button.classList.add('flex', 'items-center', 'w-full'); // Ensure full width and flex for alignment
+            button.classList.add('flex', 'items-center', 'w-full'); 
             additionalClasses.forEach(cls => button.classList.add(cls));
 
             if (iconSvgString) {
@@ -1406,16 +1405,12 @@
                 svgContainer.innerHTML = iconSvgString.trim(); 
                 const svgElement = svgContainer.firstChild;
                 if (svgElement) {
-                    // Ensure SVG has a size, e.g., by adding Tailwind classes or inline style if needed
-                    // For now, assuming the SVG's viewBox and the parent's flex properties handle alignment.
-                    // You might want to add fixed width/height to the SVG or its container span if issues persist.
-                    // e.g., svgElement.classList.add('w-5', 'h-5');
                     button.appendChild(svgElement);
                 }
             }
 
             const textSpan = document.createElement('span');
-            textSpan.classList.add('ml-2'); // Margin to the left of the text, after the icon
+            textSpan.classList.add('ml-2'); 
             textSpan.textContent = text;
             button.appendChild(textSpan);
 
@@ -1430,7 +1425,7 @@
 
             bottomSheetOptionsList.innerHTML = ''; 
             
-            // Add Edit option first
+            // Edit and Delete options grouped together
             const editSheetButton = createButtonWithIconAndText(iconEdit, 'Sửa ghi chú', () => {
                 if (currentTaskForBottomSheet) {
                     openTaskModal(currentTaskForBottomSheet);
@@ -1438,6 +1433,16 @@
                 closeMoveTaskBottomSheet();
             });
             bottomSheetOptionsList.appendChild(editSheetButton);
+
+            const deleteSheetButton = createButtonWithIconAndText(iconDelete, 'Xóa ghi chú', async () => {
+                if (currentTaskForBottomSheet) {
+                    if (await showCustomConfirm("Bạn có chắc chắn muốn xóa ghi chú này không? Hành động này không thể hoàn tác.")) {
+                        await deleteTask(currentTaskForBottomSheet.id, currentTaskForBottomSheet.attachmentPath);
+                    }
+                }
+                closeMoveTaskBottomSheet();
+            }, ['delete-option-sheet']); 
+            bottomSheetOptionsList.appendChild(deleteSheetButton);
 
 
             const destinations = [
@@ -1448,8 +1453,8 @@
 
             destinations.forEach(dest => {
                 if (dest.id !== taskData.status) {
-                    let iconForMove = dest.icon; // Use pre-defined icon if available
-                    if (dest.id === 'inprogress') { // Special logic for inprogress icon
+                    let iconForMove = dest.icon; 
+                    if (dest.id === 'inprogress') { 
                         iconForMove = (taskData.status === 'todo' || taskData.status === 'done') ? iconArrowRight : iconArrowLeft;
                     }
                     
@@ -1472,17 +1477,6 @@
                 });
                 bottomSheetOptionsList.appendChild(archiveButton);
             }
-
-            const deleteSheetButton = createButtonWithIconAndText(iconDelete, 'Xóa ghi chú', async () => {
-                if (currentTaskForBottomSheet) {
-                    if (await showCustomConfirm("Bạn có chắc chắn muốn xóa ghi chú này không? Hành động này không thể hoàn tác.")) {
-                        await deleteTask(currentTaskForBottomSheet.id, currentTaskForBottomSheet.attachmentPath);
-                    }
-                }
-                closeMoveTaskBottomSheet();
-            }, ['delete-option-sheet']); 
-            bottomSheetOptionsList.appendChild(deleteSheetButton);
-
 
             moveTaskBottomSheet.classList.add('active');
             bottomSheetOverlay.classList.add('active');
