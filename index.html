@@ -176,7 +176,7 @@
         .empty-column-placeholder svg {
             width: 32px; height: 32px; margin-bottom: 0.5rem; opacity: 0.6;
         }
-        .task-actions svg, .task-footer-btn svg { width: 16px; height: 16px; } /* Unified SVG size for actions */
+        .task-actions svg, .task-footer-btn svg, .column-title-icon svg { width: 16px; height: 16px; } /* Unified SVG size */
         #bottomSheetOptionsList button svg { width: 20px; height: 20px; } 
 
         #attachmentPreview {
@@ -318,21 +318,36 @@
             <div id="appContent" class="md:grid md:grid-cols-3 md:gap-4 md:gap-6">
                 <div id="todo-column-wrapper" class="kanban-main-column bg-rose-100 p-4 rounded-lg shadow-lg" data-status="todo">
                     <h2 class="text-xl font-semibold text-rose-700 mb-4 border-b-2 border-rose-300 pb-2 flex justify-between items-center">
-                        <span>Cần làm</span>
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="column-title-icon mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                              </svg>
+                            <span>Cần làm</span>
+                        </span>
                         <span id="todo-count" class="column-header-count">0</span>
                     </h2>
                     <div id="todo-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
                 </div>
                 <div id="inprogress-column-wrapper" class="kanban-main-column bg-amber-100 p-4 rounded-lg shadow-lg" data-status="inprogress">
                     <h2 class="text-xl font-semibold text-amber-700 mb-4 border-b-2 border-amber-300 pb-2 flex justify-between items-center">
-                        <span>Đang làm</span>
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="column-title-icon mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                              </svg>
+                            <span>Đang làm</span>
+                        </span>
                         <span id="inprogress-count" class="column-header-count">0</span>
                     </h2>
                     <div id="inprogress-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
                 </div>
                 <div id="done-column-wrapper" class="kanban-main-column bg-green-100 p-4 rounded-lg shadow-lg" data-status="done">
                     <h2 class="text-xl font-semibold text-green-700 mb-4 border-b-2 border-green-300 pb-2 flex justify-between items-center">
-                        <span>Hoàn thành</span>
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="column-title-icon mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                              </svg>
+                            <span>Hoàn thành</span>
+                        </span>
                         <span id="done-count" class="column-header-count">0</span>
                     </h2>
                     <div id="done-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
@@ -1269,7 +1284,7 @@
             taskFooterActions.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'mt-2', 'pt-2', 'border-t', 'border-slate-200');
             
             const actualMoveButtonsGroup = document.createElement('div');
-            actualMoveButtonsGroup.classList.add('flex', 'items-center', 'gap-x-1', 'mr-auto'); // Add mr-auto here to push timestamp to the right
+            actualMoveButtonsGroup.classList.add('flex', 'items-center', 'gap-x-1'); // Removed mr-auto
 
             if (task.status !== 'todo') {
                 const moveToTodoBtn = document.createElement('button');
@@ -1297,27 +1312,29 @@
                 actualMoveButtonsGroup.appendChild(moveToDoneBtn);
             }
             
+            // Add move buttons group to the left
             if (actualMoveButtonsGroup.hasChildNodes()) {
                 taskFooterActions.appendChild(actualMoveButtonsGroup);
             } else {
-                 // Add an empty div to maintain space if no move buttons, so timestamp stays right
-                const emptyDivForSpacing = document.createElement('div');
-                emptyDivForSpacing.classList.add('mr-auto'); // Ensure it pushes timestamp
-                taskFooterActions.appendChild(emptyDivForSpacing);
+                // If no move buttons, add an empty div to occupy space on the left,
+                // so the timestamp is pushed to the right by justify-between.
+                const emptyLeftDiv = document.createElement('div');
+                taskFooterActions.appendChild(emptyLeftDiv);
             }
 
             const createdAtElement = document.createElement('p');
             if (task.createdAt && task.createdAt.toDate) {
                 const createdAtDate = task.createdAt.toDate();
                 const formattedCreatedAt = `${createdAtDate.getDate().toString().padStart(2, '0')}/${(createdAtDate.getMonth() + 1).toString().padStart(2, '0')}/${createdAtDate.getFullYear()} ${createdAtDate.getHours().toString().padStart(2, '0')}:${createdAtDate.getMinutes().toString().padStart(2, '0')}`;
-                createdAtElement.textContent = formattedCreatedAt; // Removed "Tạo: "
+                createdAtElement.textContent = formattedCreatedAt; 
             } else {
                 createdAtElement.textContent = ''; 
             }
-            createdAtElement.classList.add('text-xs', 'text-slate-500'); 
+            createdAtElement.classList.add('text-xs', 'text-slate-500', 'ml-auto'); // Add ml-auto to push to the right
             taskFooterActions.appendChild(createdAtElement);
             
-            if (taskFooterActions.hasChildNodes()) { 
+            // Only append footer if it has content (either timestamp or move buttons)
+            if ((task.createdAt && task.createdAt.toDate) || actualMoveButtonsGroup.hasChildNodes()) {
                  taskElement.appendChild(taskFooterActions);
             }
 
