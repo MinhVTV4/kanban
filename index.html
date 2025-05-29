@@ -98,25 +98,31 @@
             background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        .task-actions button, .task-move-actions button {
+        /* Base style for action buttons on the task card header (Pin, More) */
+        .task-actions button {
             margin-left: 4px; padding: 4px; font-size: 0.75rem;
             border: 1px solid transparent; border-radius: 0.25rem;
             display: flex; align-items: center; justify-content: center;
             width: 28px; height: 28px;
         }
-        .task-actions button:hover, .task-move-actions button:hover { opacity: 0.8; }
-        .task-move-actions {
-            margin-top: 6px; width: 100%; display: flex;
-            justify-content: flex-start; gap: 6px;
+        .task-actions button:hover { opacity: 0.8; }
+        
+        /* Base style for move buttons in the task card footer */
+        .task-footer-btn {
+            padding: 4px; font-size: 0.75rem;
+            border: 1px solid transparent; border-radius: 0.25rem;
+            display: flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px;
         }
+        .task-footer-btn:hover { opacity: 0.8; }
+
         .move-btn-todo { background-color: #fecaca20; color: #b91c1c; border-color: #fca5a580; }
         .move-btn-inprogress { background-color: #fed7aa20; color: #c2410c; border-color: #fdba7480; }
         .move-btn-done { background-color: #bbf7d020; color: #15803d; border-color: #86efac80; }
-        .archive-btn { background-color: #e2e8f020; color: #4a5568; border-color: #cbd5e080; }
-
-        .task-actions .pin-btn { color: #a16207; } /* Tailwind amber-700 for pin */
-        .task-actions .pin-btn.pinned { color: #f59e0b; } /* Tailwind amber-500 for pinned */
-        .task-actions .pin-btn:hover { background-color: #fef3c7; } /* Tailwind amber-100 for hover */
+        
+        .task-actions .pin-btn { color: #a16207; } 
+        .task-actions .pin-btn.pinned { color: #f59e0b; } 
+        .task-actions .pin-btn:hover { background-color: #fef3c7; } 
 
 
         .task-due-date { font-size: 0.75rem; color: #4a5568; margin-top: 4px; }
@@ -170,7 +176,7 @@
         .empty-column-placeholder svg {
             width: 32px; height: 32px; margin-bottom: 0.5rem; opacity: 0.6;
         }
-        .task-actions svg, .task-move-actions svg { width: 16px; height: 16px; }
+        .task-actions svg, .task-footer-btn svg { width: 16px; height: 16px; } /* Unified SVG size for actions */
         #bottomSheetOptionsList button svg { width: 20px; height: 20px; } 
 
         #attachmentPreview {
@@ -1174,7 +1180,7 @@
             if (task.priority && !task.isPinned) { 
                  taskElement.classList.add(`priority-${task.priority}`);
             } else if (!task.isPinned) {
-                 taskElement.classList.add('priority-medium');
+                 taskElement.classList.add('priority-medium'); // Default border if not pinned and no priority
             }
 
 
@@ -1190,16 +1196,16 @@
             actionsContainer.classList.add('task-actions', 'flex', 'items-center', 'flex-shrink-0');
 
             const pinButton = document.createElement('button');
-            pinButton.classList.add('pin-btn');
+            pinButton.classList.add('pin-btn'); // Base class for pin button styling
             pinButton.innerHTML = task.isPinned ? iconPinSolid : iconPinOutline;
             pinButton.title = task.isPinned ? "Bỏ ghim" : "Ghim lên đầu";
-            if(task.isPinned) pinButton.classList.add('pinned');
+            if(task.isPinned) pinButton.classList.add('pinned'); // For specific "pinned" state styling if needed
             pinButton.onclick = (e) => { e.stopPropagation(); togglePinTask(task); };
             actionsContainer.appendChild(pinButton);
 
             const moreActionsButton = document.createElement('button');
             moreActionsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" fill="currentColor" style="width:0.7em; height:0.7em; display:inline-block; vertical-align:middle;"><path d="M64 360a56 56 0 100 112 56 56 0 100-112zm0-160a56 56 0 100 112 56 56 0 100-112zM120 96a56 56 0 10-112 0 56 56 0 10112 0z"/></svg>`;
-            moreActionsButton.classList.add('text-slate-500', 'hover:text-slate-700');
+            moreActionsButton.classList.add('text-slate-500', 'hover:text-slate-700'); // General styling for more actions
             moreActionsButton.title = "Thêm hành động";
             moreActionsButton.onclick = (e) => {
                 e.stopPropagation();
@@ -1228,14 +1234,14 @@
             }
 
             const detailsContainer = document.createElement('div');
-            detailsContainer.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'flex-wrap', 'mb-1', 'mt-1');
+            detailsContainer.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'flex-wrap', 'gap-x-2', 'mb-1', 'mt-1'); 
 
             if (task.dueDate) {
                 const dueDateElement = document.createElement('p');
                 const [year, month, day] = task.dueDate.split('-');
                 const formattedDate = `${day}/${month}/${year}`;
                 dueDateElement.textContent = `Hạn: ${formattedDate}`;
-                dueDateElement.classList.add('task-due-date', 'mr-2');
+                dueDateElement.classList.add('task-due-date'); 
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 const dueDateObj = new Date(year, month - 1, day);
                 if (dueDateObj < today) {
@@ -1254,50 +1260,63 @@
                 priorityIndicator.textContent = task.priority === 'high' ? 'Cao' : task.priority === 'medium' ? 'TB' : 'Thấp';
                 detailsContainer.appendChild(priorityIndicator);
             }
-
-            if (task.createdAt && task.createdAt.toDate) {
-                const createdAtDate = task.createdAt.toDate();
-                const createdAtElement = document.createElement('p');
-                const formattedCreatedAt = `${createdAtDate.getDate().toString().padStart(2, '0')}/${(createdAtDate.getMonth() + 1).toString().padStart(2, '0')}/${createdAtDate.getFullYear()} ${createdAtDate.getHours().toString().padStart(2, '0')}:${createdAtDate.getMinutes().toString().padStart(2, '0')}`;
-                createdAtElement.textContent = `Tạo: ${formattedCreatedAt}`;
-                createdAtElement.classList.add('text-xs', 'text-slate-500', 'mt-1', 'w-full', 'text-right');
-                detailsContainer.appendChild(createdAtElement);
+            
+            if (detailsContainer.hasChildNodes()) {
+                 taskElement.appendChild(detailsContainer);
             }
 
+            const taskFooterActions = document.createElement('div');
+            taskFooterActions.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'mt-2', 'pt-2', 'border-t', 'border-slate-200');
 
-            if (detailsContainer.hasChildNodes()) taskElement.appendChild(detailsContainer);
-
-            const moveActionsContainer = document.createElement('div');
-            moveActionsContainer.classList.add('task-move-actions');
+            const createdAtElement = document.createElement('p');
+            if (task.createdAt && task.createdAt.toDate) {
+                const createdAtDate = task.createdAt.toDate();
+                const formattedCreatedAt = `${createdAtDate.getDate().toString().padStart(2, '0')}/${(createdAtDate.getMonth() + 1).toString().padStart(2, '0')}/${createdAtDate.getFullYear()} ${createdAtDate.getHours().toString().padStart(2, '0')}:${createdAtDate.getMinutes().toString().padStart(2, '0')}`;
+                createdAtElement.textContent = `Tạo: ${formattedCreatedAt}`;
+            } else {
+                createdAtElement.textContent = ''; // Ensure it's an empty string if no date
+            }
+            createdAtElement.classList.add('text-xs', 'text-slate-500', 'mr-auto'); // mr-auto to push buttons to the right
+            taskFooterActions.appendChild(createdAtElement);
+            
+            const actualMoveButtonsGroup = document.createElement('div');
+            actualMoveButtonsGroup.classList.add('flex', 'items-center', 'gap-x-1'); 
 
             if (task.status !== 'todo') {
                 const moveToTodoBtn = document.createElement('button');
                 moveToTodoBtn.innerHTML = iconArrowLeft;
-                moveToTodoBtn.classList.add('move-btn-todo');
+                moveToTodoBtn.classList.add('task-footer-btn', 'move-btn-todo');
                 moveToTodoBtn.title = "Chuyển sang Cần làm";
                 moveToTodoBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'todo'); };
-                moveActionsContainer.appendChild(moveToTodoBtn);
+                actualMoveButtonsGroup.appendChild(moveToTodoBtn);
             }
             if (task.status !== 'inprogress') {
                 const moveToInProgressBtn = document.createElement('button');
-                moveToInProgressBtn.innerHTML = (task.status === 'todo') ? iconArrowRight : iconArrowLeft;
-                moveToInProgressBtn.classList.add('move-btn-inprogress');
+                moveToInProgressBtn.innerHTML = (task.status === 'todo' || task.status === 'done') ? iconArrowRight : iconArrowLeft;
+                moveToInProgressBtn.classList.add('task-footer-btn', 'move-btn-inprogress');
                 moveToInProgressBtn.title = "Chuyển sang Đang làm";
                 moveToInProgressBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'inprogress'); };
-                moveActionsContainer.appendChild(moveToInProgressBtn);
+                actualMoveButtonsGroup.appendChild(moveToInProgressBtn);
             }
 
-            if (task.status !== 'done') { // Show "Move to Done" unless it's already done
+            if (task.status !== 'done') { 
                 const moveToDoneBtn = document.createElement('button');
                 moveToDoneBtn.innerHTML = iconCheck;
-                moveToDoneBtn.classList.add('move-btn-done');
+                moveToDoneBtn.classList.add('task-footer-btn', 'move-btn-done');
                 moveToDoneBtn.title = "Chuyển sang Hoàn thành";
                 moveToDoneBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'done'); };
-                moveActionsContainer.appendChild(moveToDoneBtn);
+                actualMoveButtonsGroup.appendChild(moveToDoneBtn);
+            }
+            
+            if (actualMoveButtonsGroup.hasChildNodes()) {
+                taskFooterActions.appendChild(actualMoveButtonsGroup);
+            }
+            
+            // Only append footer if it has a timestamp or move buttons
+            if ((task.createdAt && task.createdAt.toDate) || actualMoveButtonsGroup.hasChildNodes()) {
+                 taskElement.appendChild(taskFooterActions);
             }
 
-
-            if (moveActionsContainer.hasChildNodes()) taskElement.appendChild(moveActionsContainer);
 
             taskElement.addEventListener('dragstart', handleDragStart);
             if (columns[task.status]) columns[task.status].appendChild(taskElement);
