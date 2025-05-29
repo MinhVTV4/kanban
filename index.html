@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghi chú Kanban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none; 
+        }
+        .kanban-column {
+            min-height: 200px; 
+            overflow-y: auto; 
+            height: calc(100vh - 70px); 
+        }
+        @media (min-width: 768px) { /* md breakpoint and up */
+            .kanban-column {
+                height: calc(100vh - 120px); 
+            }
+        }
+
+        .task {
+            cursor: grab;
+            touch-action: manipulation; 
+            border-left-width: 4px; 
+            border-left-color: transparent; 
+            transition: border-color 0.3s ease-in-out;
+        }
+        .task-attachment-preview {
+            max-width: 100%;
+            max-height: 100px; /* Giới hạn chiều cao ảnh preview */
+            object-fit: cover;
+            border-radius: 0.25rem; /* rounded-sm */
+            margin-top: 8px;
+            border: 1px solid #e2e8f0; /* Tailwind gray-200 */
+        }
+        .task-attachment-link {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #2b6cb0; /* Tailwind blue-600 */
+            text-decoration: underline;
+        }
+        .task-attachment-link:hover {
+            color: #2c5282; /* Tailwind blue-800 */
+        }
+
+        .task:active {
+            cursor: grabbing;
+        }
+        .dragging {
+            opacity: 0.5;
+            border: 2px dashed #cbd5e0; 
+        }
+        .drag-over {
+            border: 2px dashed #3b82f6; 
+            background-color: #eff6ff; 
+        }
+        #confettiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; 
+            z-index: 9999;
+        }
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .kanban-column::-webkit-scrollbar {
+            width: 8px;
+        }
+        .kanban-column::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .kanban-column::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .kanban-column::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        #appContent { 
+            display: none;
+        }
+        .auth-form-container {
+            max-width: 400px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .task-actions button, .task-move-actions button {
+            margin-left: 4px;
+            padding: 4px; 
+            font-size: 0.75rem; 
+            border: 1px solid transparent;
+            border-radius: 0.25rem; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 28px; 
+            height: 28px; 
+        }
+        .task-actions button:hover, .task-move-actions button:hover {
+            opacity: 0.8;
+        }
+        .task-move-actions {
+            margin-top: 6px; 
+            width: 100%;
+            display: flex;
+            justify-content: flex-start; 
+            gap: 6px; 
+        }
+        .move-btn-todo { background-color: #fecaca20; color: #b91c1c; border-color: #fca5a580; } 
+        .move-btn-inprogress { background-color: #fed7aa20; color: #c2410c; border-color: #fdba7480; } 
+        .move-btn-done { background-color: #bbf7d020; color: #15803d; border-color: #86efac80; } 
+
+        .task-actions .edit-btn { color: #3b82f6; } 
+        .task-actions .delete-btn { color: #ef4444; } 
+        .task-actions .edit-btn:hover { background-color: #dbeafe; } 
+        .task-actions .delete-btn:hover { background-color: #fee2e2; } 
+
+
+        .task-due-date {
+            font-size: 0.75rem; 
+            color: #4a5568; 
+            margin-top: 4px;
+        }
+        .due-date-passed {
+            color: #e53e3e; 
+            font-weight: 500;
+        }
+        .due-date-today {
+            color: #dd6b20; 
+            font-weight: 500;
+        }
+
+        .priority-low { border-left-color: #68d391; }
+        .priority-medium { border-left-color: #f6e05e; }
+        .priority-high { border-left-color: #fc8181; }
+        
+        .priority-indicator {
+            font-size: 0.7rem;
+            padding: 1px 4px;
+            border-radius: 4px;
+            margin-top: 4px;
+            display: inline-block;
+            color: white; 
+        }
+        .indicator-low { background-color: #68d391; }
+        .indicator-medium { background-color: #f6e05e; color: #4a5568; }
+        .indicator-high { background-color: #fc8181; }
+
+        #appHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0.75rem; 
+            margin-bottom: 0.75rem; 
+            height: 40px; 
+        }
+        #appHeader h1 {
+            font-size: 1.25rem; 
+            font-weight: 600; 
+            margin: 0;
+            color: #2d3748; 
+        }
+        #headerUserControls {
+            display: flex;
+            align-items: center;
+        }
+        #userInfo {
+           display: none !important; 
+        }
+        #logoutBtn {
+            background-color: transparent; 
+            color: #4a5568; 
+            padding: 0.25rem; 
+            border: none;
+            border-radius: 9999px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px; 
+            height: 32px; 
+        }
+        #logoutBtn:hover {
+            background-color: #edf2f7; 
+            color: #1a202c; 
+        }
+        #logoutBtn svg {
+            width: 18px; 
+            height: 18px; 
+        }
+        #addTaskBtnContainerDesktop {
+            height: 40px; 
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem; 
+        }
+        #addTaskBtn { 
+            padding: 0.4rem 0.8rem; 
+            font-size: 0.85rem;
+        }
+        #fabAddTaskBtn { 
+            width: 56px; 
+            height: 56px; 
+            font-size: 2rem; 
+            line-height: 1; 
+        }
+        .empty-column-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 150px; 
+            border: 2px dashed #cbd5e0; 
+            border-radius: 0.375rem; 
+            color: #718096; 
+            font-style: italic;
+            margin-top: 1rem;
+        }
+        .empty-column-placeholder svg { 
+            width: 32px;
+            height: 32px;
+            margin-bottom: 0.5rem;
+            opacity: 0.6;
+        }
+        .task-actions svg, .task-move-actions svg {
+            width: 16px; 
+            height: 16px;
+        }
+        #attachmentPreview {
+            max-width: 100px;
+            max-height: 100px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            display: none; /* Hidden by default */
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none; /* Hidden by default */
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-100 text-slate-800">
+    <div class="container mx-auto p-2 md:p-1"> 
+        <header id="appHeader" style="display: none;"> 
+            <h1>Ghi chú</h1>
+            <div id="headerUserControls">
+                <div id="userInfo"></div> 
+                <button id="logoutBtn" class="hidden" title="Đăng xuất">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
+                        <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <div id="loginFormContainer" class="auth-form-container">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Đăng nhập</h2>
+            <input type="email" id="emailInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Email">
+            <input type="password" id="passwordInput" class="w-full p-3 border border-slate-300 rounded-lg mb-6 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Mật khẩu">
+            <button id="loginBtn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out mb-3">
+                Đăng nhập
+            </button>
+            <button id="showRegisterBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
+                Đăng ký
+            </button>
+            <p id="authError" class="text-red-500 text-sm mt-3 text-center"></p>
+        </div>
+        
+        <div id="registerFormContainer" class="auth-form-container" style="display: none;">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Đăng ký</h2>
+            <input type="email" id="registerEmailInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Email">
+            <input type="password" id="registerPasswordInput" class="w-full p-3 border border-slate-300 rounded-lg mb-6 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Mật khẩu (tối thiểu 6 ký tự)">
+            <button id="registerBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out mb-3">
+                Đăng ký
+            </button>
+            <button id="showLoginBtn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
+                Quay lại Đăng nhập
+            </button>
+            <p id="registerAuthError" class="text-red-500 text-sm mt-3 text-center"></p>
+        </div>
+
+        <div id="addTaskBtnContainerDesktop" class="hidden md:flex"> 
+            <button id="addTaskBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out">
+                Thêm ghi chú
+            </button>
+        </div>
+
+        <div id="appContent" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <div id="todo" class="bg-rose-100 p-4 rounded-lg shadow-lg kanban-column" data-status="todo">
+                <h2 class="text-xl font-semibold text-rose-700 mb-4 border-b-2 border-rose-300 pb-2">Cần làm</h2>
+                <div id="todo-tasks" class="space-y-3 task-list min-h-[100px]"></div>
+            </div>
+            <div id="inprogress" class="bg-amber-100 p-4 rounded-lg shadow-lg kanban-column" data-status="inprogress">
+                <h2 class="text-xl font-semibold text-amber-700 mb-4 border-b-2 border-amber-300 pb-2">Đang làm</h2>
+                <div id="inprogress-tasks" class="space-y-3 task-list min-h-[100px]"></div>
+            </div>
+            <div id="done" class="bg-green-100 p-4 rounded-lg shadow-lg kanban-column" data-status="done">
+                <h2 class="text-xl font-semibold text-green-700 mb-4 border-b-2 border-green-300 pb-2">Hoàn thành</h2>
+                <div id="done-tasks" class="space-y-3 task-list min-h-[100px]"></div>
+            </div>
+        </div>
+
+        <button id="fabAddTaskBtn" class="block md:hidden fixed bottom-6 right-6 bg-sky-500 hover:bg-sky-600 text-white rounded-full shadow-lg flex items-center justify-center z-50" title="Thêm ghi chú mới">
+            +
+        </button>
+    </div>
+
+    <div id="taskModal" class="modal">
+        <div class="modal-content bg-white rounded-lg shadow-xl">
+            <span id="closeModalBtn" class="close-button">&times;</span>
+            <h3 id="modalTitle" class="text-2xl font-semibold mb-6 text-slate-700">Thêm ghi chú mới</h3>
+            
+            <label for="taskInput" class="block text-sm font-medium text-slate-700 mb-1">Nội dung ghi chú:</label>
+            <input type="text" id="taskInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Nhập nội dung ghi chú...">
+            
+            <label for="taskDueDateInput" class="block text-sm font-medium text-slate-700 mb-1">Ngày hết hạn (Tùy chọn):</label>
+            <input type="date" id="taskDueDateInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+
+            <label for="taskPriorityInput" class="block text-sm font-medium text-slate-700 mb-1">Mức độ ưu tiên:</label>
+            <select id="taskPriorityInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                <option value="low">Thấp</option>
+                <option value="medium" selected>Trung bình</option>
+                <option value="high">Cao</option>
+            </select>
+
+            <label for="taskAttachmentInput" class="block text-sm font-medium text-slate-700 mb-1">Đính kèm (Tùy chọn):</label>
+            <input type="file" id="taskAttachmentInput" class="w-full p-2 border border-slate-300 rounded-lg mb-1 focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <img id="attachmentPreview" src="#" alt="Xem trước ảnh đính kèm" class="mb-4"/>
+            <div id="currentAttachmentInfo" class="text-sm text-slate-500 mb-4" style="display:none;">
+                File hiện tại: <a href="#" target="_blank" id="currentAttachmentLink"></a> 
+                <button id="removeAttachmentBtn" class="text-red-500 hover:text-red-700 text-xs ml-2">[Xóa]</button>
+            </div>
+            
+            <div class="flex justify-end items-center">
+                <div id="uploadSpinner" class="loading-spinner"></div>
+                <button id="saveTaskBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition duration-150 ease-in-out">
+                    Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
+        import { 
+            getAuth, 
+            onAuthStateChanged,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js"; 
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            doc, 
+            updateDoc, 
+            deleteDoc, 
+            onSnapshot, 
+            query, 
+            where,
+            Timestamp,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js"; 
+        // Thêm import cho Firebase Storage
+        import { 
+            getStorage, 
+            ref as storageRef, // Đổi tên ref để tránh xung đột với ref của Firestore
+            uploadBytes, 
+            getDownloadURL,
+            deleteObject
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPEaExmwMz2mQWN_vDDTdziegQUfUrLaA", 
+            authDomain: "ghichucode.firebaseapp.com", 
+            projectId: "ghichucode", 
+            storageBucket: "ghichucode.firebasestorage.app", // Đảm bảo đúng bucket
+            messagingSenderId: "105071769282", 
+            appId: "1:105071769282:web:9af172be73deb5267eed5b" 
+        };
+        
+        const appIdForPath = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app); // Khởi tạo Firebase Storage
+        setLogLevel('debug'); 
+
+        let currentUserId = null;
+        let isAuthReady = false; 
+        let tasksUnsubscribe = null; 
+        let currentEditTaskId = null; 
+        let currentTaskDataForEdit = null; // Lưu trữ dữ liệu task hiện tại khi sửa
+
+        const loginFormContainer = document.getElementById('loginFormContainer');
+        const registerFormContainer = document.getElementById('registerFormContainer');
+        const emailInput = document.getElementById('emailInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const showRegisterBtn = document.getElementById('showRegisterBtn');
+        const registerEmailInput = document.getElementById('registerEmailInput');
+        const registerPasswordInput = document.getElementById('registerPasswordInput');
+        const registerBtn = document.getElementById('registerBtn');
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        const authError = document.getElementById('authError');
+        const registerAuthError = document.getElementById('registerAuthError');
+        
+        const appHeader = document.getElementById('appHeader'); 
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        const appContent = document.getElementById('appContent');
+        const addTaskBtnContainerDesktop = document.getElementById('addTaskBtnContainerDesktop'); 
+        const addTaskBtn = document.getElementById('addTaskBtn'); 
+        const fabAddTaskBtn = document.getElementById('fabAddTaskBtn'); 
+
+        const taskModal = document.getElementById('taskModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const saveTaskBtn = document.getElementById('saveTaskBtn');
+        const taskInput = document.getElementById('taskInput');
+        const taskDueDateInput = document.getElementById('taskDueDateInput'); 
+        const taskPriorityInput = document.getElementById('taskPriorityInput'); 
+        const taskAttachmentInput = document.getElementById('taskAttachmentInput');
+        const attachmentPreview = document.getElementById('attachmentPreview');
+        const currentAttachmentInfo = document.getElementById('currentAttachmentInfo');
+        const currentAttachmentLink = document.getElementById('currentAttachmentLink');
+        const removeAttachmentBtn = document.getElementById('removeAttachmentBtn');
+        const uploadSpinner = document.getElementById('uploadSpinner');
+        const modalTitle = document.getElementById('modalTitle'); 
+        const columns = {
+            todo: document.getElementById('todo-tasks'),
+            inprogress: document.getElementById('inprogress-tasks'),
+            done: document.getElementById('done-tasks')
+        };
+        const columnElements = document.querySelectorAll('.kanban-column');
+
+        const iconArrowLeft = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>`;
+        const iconArrowRight = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>`;
+        const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>`;
+        const iconEdit = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>`;
+        const iconDelete = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.56 0c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
+
+        taskAttachmentInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    attachmentPreview.src = e.target.result;
+                    attachmentPreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                attachmentPreview.style.display = 'none';
+                attachmentPreview.src = '#'; // Reset src
+            }
+        });
+
+        removeAttachmentBtn.addEventListener('click', async () => {
+            if (currentEditTaskId && currentTaskDataForEdit && currentTaskDataForEdit.attachmentPath) {
+                if (await showCustomConfirm("Bạn có chắc chắn muốn xóa file đính kèm này không?")) {
+                    uploadSpinner.style.display = 'inline-block';
+                    saveTaskBtn.disabled = true;
+                    try {
+                        const oldFileRef = storageRef(storage, currentTaskDataForEdit.attachmentPath);
+                        await deleteObject(oldFileRef);
+                        console.log("Old attachment deleted from Storage.");
+
+                        const tasksCollectionPath = getTasksCollectionPath();
+                        const taskRefFirestore = doc(db, tasksCollectionPath, currentEditTaskId);
+                        await updateDoc(taskRefFirestore, {
+                            attachmentURL: null,
+                            attachmentPath: null,
+                            attachmentType: null,
+                            attachmentName: null
+                        });
+                        console.log("Attachment info removed from Firestore.");
+                        currentAttachmentInfo.style.display = 'none';
+                        attachmentPreview.style.display = 'none';
+                        attachmentPreview.src = '#';
+                        currentTaskDataForEdit.attachmentPath = null; // Update local cache
+                        currentTaskDataForEdit.attachmentURL = null;
+                    } catch (error) {
+                        console.error("Error removing attachment: ", error);
+                        alert("Lỗi khi xóa file đính kèm: " + error.message);
+                    } finally {
+                        uploadSpinner.style.display = 'none';
+                        saveTaskBtn.disabled = false;
+                    }
+                }
+            }
+        });
+
+
+        function showLoginForm() {
+            loginFormContainer.style.display = 'block';
+            registerFormContainer.style.display = 'none';
+            appHeader.style.display = 'none'; 
+            appContent.style.display = 'none';
+            addTaskBtnContainerDesktop.style.display = 'none'; 
+            fabAddTaskBtn.style.display = 'none'; 
+        }
+
+        function showRegisterForm() {
+            loginFormContainer.style.display = 'none';
+            registerFormContainer.style.display = 'block';
+            appHeader.style.display = 'none'; 
+            appContent.style.display = 'none';
+            addTaskBtnContainerDesktop.style.display = 'none';
+            fabAddTaskBtn.style.display = 'none';
+        }
+        
+        function showAppContent(user) {
+            loginFormContainer.style.display = 'none';
+            registerFormContainer.style.display = 'none';
+            appHeader.style.display = 'flex'; 
+            appContent.style.display = 'grid'; 
+            
+            addTaskBtnContainerDesktop.style.display = ''; 
+            fabAddTaskBtn.style.display = ''; 
+
+            logoutBtn.classList.remove('hidden'); 
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                showAppContent(user);
+                isAuthReady = true;
+                loadTasks(); 
+            } else {
+                currentUserId = null;
+                isAuthReady = false; 
+                if (tasksUnsubscribe) {
+                    tasksUnsubscribe(); 
+                    tasksUnsubscribe = null;
+                }
+                Object.values(columns).forEach(col => col.innerHTML = ''); 
+                showLoginForm();
+            }
+        });
+
+        loginBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authError.textContent = '';
+            try { await signInWithEmailAndPassword(auth, email, password); } 
+            catch (error) { authError.textContent = "Đăng nhập thất bại: " + error.message; }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try { await signOut(auth); } 
+            catch (error) { console.error("Error signing out: ", error); }
+        });
+        
+        showRegisterBtn.addEventListener('click', () => showRegisterForm());
+        showLoginBtn.addEventListener('click', () => showLoginForm());
+
+        registerBtn.addEventListener('click', async () => {
+            const email = registerEmailInput.value;
+            const password = registerPasswordInput.value;
+            registerAuthError.textContent = '';
+            try { await createUserWithEmailAndPassword(auth, email, password); } 
+            catch (error) { registerAuthError.textContent = "Đăng ký thất bại: " + error.message; }
+        });
+
+        const getTasksCollectionPath = () => {
+            if (!currentUserId) return null; 
+            return `artifacts/${appIdForPath}/users/${currentUserId}/kanbanTasks`;
+        };
+
+        function openTaskModal(taskToEdit = null) {
+            currentTaskDataForEdit = taskToEdit; // Lưu dữ liệu task hiện tại
+            attachmentPreview.style.display = 'none'; // Ẩn preview cũ
+            attachmentPreview.src = '#';
+            taskAttachmentInput.value = ''; // Reset file input
+            currentAttachmentInfo.style.display = 'none';
+
+
+            if (taskToEdit) {
+                currentEditTaskId = taskToEdit.id;
+                taskInput.value = taskToEdit.description;
+                taskDueDateInput.value = taskToEdit.dueDate || ""; 
+                taskPriorityInput.value = taskToEdit.priority || "medium"; 
+                modalTitle.textContent = "Sửa ghi chú";
+                saveTaskBtn.textContent = "Cập nhật";
+
+                if (taskToEdit.attachmentURL) {
+                    currentAttachmentLink.href = taskToEdit.attachmentURL;
+                    currentAttachmentLink.textContent = taskToEdit.attachmentName || "Xem file";
+                    currentAttachmentInfo.style.display = 'block';
+                    if (taskToEdit.attachmentType && taskToEdit.attachmentType.startsWith('image/')) {
+                        attachmentPreview.src = taskToEdit.attachmentURL;
+                        attachmentPreview.style.display = 'block';
+                    }
+                }
+
+            } else {
+                currentEditTaskId = null;
+                taskInput.value = "";
+                taskDueDateInput.value = ""; 
+                taskPriorityInput.value = "medium"; 
+                modalTitle.textContent = "Thêm ghi chú mới";
+                saveTaskBtn.textContent = "Lưu";
+            }
+            taskModal.style.display = 'flex';
+            taskInput.focus();
+        }
+
+        function closeAndResetModal() {
+            taskModal.style.display = 'none';
+            currentEditTaskId = null;
+            currentTaskDataForEdit = null;
+            taskInput.value = "";
+            taskDueDateInput.value = ""; 
+            taskPriorityInput.value = "medium"; 
+            taskAttachmentInput.value = ""; // Quan trọng: reset file input
+            attachmentPreview.style.display = 'none';
+            attachmentPreview.src = '#';
+            currentAttachmentInfo.style.display = 'none';
+            modalTitle.textContent = "Thêm ghi chú mới";
+            saveTaskBtn.textContent = "Lưu";
+        }
+
+        async function handleSaveTask() {
+            const description = taskInput.value;
+            const dueDate = taskDueDateInput.value; 
+            const priority = taskPriorityInput.value; 
+            const file = taskAttachmentInput.files[0];
+
+            if (!description.trim()) {
+                alert("Nội dung ghi chú không được để trống.");
+                return;
+            }
+
+            if (!isAuthReady || !currentUserId) {
+                alert("Bạn cần đăng nhập để thực hiện hành động này."); 
+                return;
+            }
+            const tasksCollectionPath = getTasksCollectionPath();
+            if (!tasksCollectionPath) return;
+
+            uploadSpinner.style.display = 'inline-block';
+            saveTaskBtn.disabled = true;
+
+            const taskData = {
+                description: description,
+                dueDate: dueDate || null, 
+                priority: priority, 
+            };
+
+            try {
+                // Xử lý file đính kèm
+                if (file) { // Nếu có file mới được chọn
+                    // Xóa file cũ nếu đang sửa và có file cũ
+                    if (currentEditTaskId && currentTaskDataForEdit && currentTaskDataForEdit.attachmentPath) {
+                        try {
+                            const oldFileRef = storageRef(storage, currentTaskDataForEdit.attachmentPath);
+                            await deleteObject(oldFileRef);
+                            console.log("Old attachment deleted from Storage during update.");
+                        } catch (delError) {
+                            console.warn("Could not delete old attachment during update:", delError);
+                            // Tiếp tục dù không xóa được file cũ
+                        }
+                    }
+
+                    const uniqueFileName = `${Date.now()}-${file.name}`;
+                    const filePath = `users/${currentUserId}/attachments/${uniqueFileName}`;
+                    const fileRef = storageRef(storage, filePath);
+                    
+                    await uploadBytes(fileRef, file);
+                    const downloadURL = await getDownloadURL(fileRef);
+                    
+                    taskData.attachmentURL = downloadURL;
+                    taskData.attachmentPath = filePath; // Lưu path để xóa sau này
+                    taskData.attachmentType = file.type;
+                    taskData.attachmentName = file.name;
+                    console.log("File uploaded successfully:", downloadURL);
+
+                } else if (currentEditTaskId && currentTaskDataForEdit) {
+                    // Nếu không có file mới, giữ lại thông tin file cũ (nếu có)
+                    // Trường hợp này đã được xử lý bằng cách không ghi đè nếu không có file mới,
+                    // và việc xóa file được xử lý riêng bởi nút "Remove Attachment"
+                    // Tuy nhiên, nếu muốn xóa file khi input file trống, logic sẽ khác
+                }
+
+
+                if (currentEditTaskId) { 
+                    const taskRefFirestore = doc(db, tasksCollectionPath, currentEditTaskId);
+                    await updateDoc(taskRefFirestore, taskData); 
+                    console.log("Task updated successfully:", currentEditTaskId);
+                } else { 
+                    taskData.status = 'todo'; 
+                    taskData.userId = currentUserId; 
+                    taskData.createdAt = Timestamp.now(); 
+                    await addDoc(collection(db, tasksCollectionPath), taskData);
+                    console.log("Task added successfully");
+                }
+                closeAndResetModal();
+            } catch (error) {
+                console.error("Error saving task: ", error);
+                alert("Lỗi khi lưu ghi chú: " + error.message); 
+            } finally {
+                uploadSpinner.style.display = 'none';
+                saveTaskBtn.disabled = false;
+            }
+        }
+        
+        saveTaskBtn.addEventListener('click', handleSaveTask);
+        
+        [taskInput, taskDueDateInput, taskPriorityInput].forEach(inputElement => {
+            inputElement.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSaveTask();
+                }
+            });
+        });
+
+        async function moveTask(taskId, newStatus) {
+            if (!isAuthReady || !currentUserId) return;
+            const tasksCollectionPath = getTasksCollectionPath();
+            if (!tasksCollectionPath) return;
+            const taskRef = doc(db, tasksCollectionPath, taskId);
+            try {
+                await updateDoc(taskRef, { status: newStatus });
+                if (newStatus === 'done') triggerConfetti();
+            } catch (error) {
+                alert("Lỗi khi di chuyển ghi chú: " + error.message);
+            }
+        }
+
+
+        function loadTasks() {
+            if (!isAuthReady || !currentUserId) return;
+            if (tasksUnsubscribe) tasksUnsubscribe();
+            
+            const tasksCollectionPath = getTasksCollectionPath();
+            if (!tasksCollectionPath) return;
+
+            const q = query(collection(db, tasksCollectionPath), where("userId", "==", currentUserId));
+            tasksUnsubscribe = onSnapshot(q, (snapshot) => {
+                Object.values(columns).forEach(colDiv => {
+                    colDiv.innerHTML = ''; 
+                });
+                
+                snapshot.forEach((docSnap) => { // Đổi tên biến để tránh nhầm lẫn
+                    renderTask({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                Object.entries(columns).forEach(([statusKey, columnDiv]) => {
+                    if (columnDiv.children.length === 0) { 
+                        const placeholder = document.createElement('div');
+                        placeholder.classList.add('empty-column-placeholder');
+                        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>`;
+                        placeholder.innerHTML = iconSvg;
+                        const messageP = document.createElement('p');
+                        let message = "Kéo ghi chú vào đây";
+                        if (statusKey === 'todo') message = "Chưa có ghi chú nào. Nhấn '+' để thêm.";
+                        else if (statusKey === 'inprogress') message = "Không có ghi chú nào đang thực hiện.";
+                        else if (statusKey === 'done') message = "Chưa có ghi chú nào hoàn thành.";
+                        messageP.textContent = message;
+                        placeholder.appendChild(messageP);
+                        columnDiv.appendChild(placeholder);
+                    }
+                });
+                 const firestoreErrorElement = document.querySelector('.firestore-error');
+                if (firestoreErrorElement) firestoreErrorElement.remove();
+            }, (error) => {
+                console.error(`Error loading tasks from ${tasksCollectionPath} for user ${currentUserId}: `, error);
+            });
+        }
+
+        function renderTask(task) {
+            const taskElement = document.createElement('div');
+            taskElement.classList.add('task', 'bg-white', 'p-3', 'rounded-md', 'shadow', 'hover:shadow-lg', 'transition-shadow', 'flex', 'flex-col', 'items-start'); 
+            taskElement.setAttribute('draggable', true);
+            taskElement.dataset.id = task.id;
+            taskElement.dataset.status = task.status;
+
+            if (task.priority) taskElement.classList.add(`priority-${task.priority}`);
+            else taskElement.classList.add('priority-medium'); 
+
+            const mainContent = document.createElement('div'); 
+            mainContent.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'mb-1'); 
+
+            const taskText = document.createElement('p');
+            taskText.textContent = task.description;
+            taskText.classList.add('text-sm', 'text-slate-700', 'flex-grow', 'mr-2'); 
+            mainContent.appendChild(taskText);
+
+            const actionsContainer = document.createElement('div');
+            actionsContainer.classList.add('task-actions', 'flex', 'items-center', 'flex-shrink-0'); 
+
+            const editButton = document.createElement('button');
+            editButton.innerHTML = iconEdit; 
+            editButton.classList.add('edit-btn'); 
+            editButton.title = "Sửa ghi chú";
+            editButton.onclick = (e) => { e.stopPropagation(); openTaskModal(task); };
+            actionsContainer.appendChild(editButton);
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = iconDelete;
+            deleteButton.classList.add('delete-btn'); 
+            deleteButton.title = "Xóa ghi chú";
+            deleteButton.onclick = async (e) => {
+                e.stopPropagation(); 
+                if (await showCustomConfirm("Bạn có chắc chắn muốn xóa ghi chú này không?")) {
+                    deleteTask(task.id, task.attachmentPath); // Truyền attachmentPath để xóa file
+                }
+            };
+            actionsContainer.appendChild(deleteButton);
+            mainContent.appendChild(actionsContainer);
+            taskElement.appendChild(mainContent);
+
+            // Hiển thị file đính kèm
+            if (task.attachmentURL) {
+                if (task.attachmentType && task.attachmentType.startsWith('image/')) {
+                    const imgPreview = document.createElement('img');
+                    imgPreview.src = task.attachmentURL;
+                    imgPreview.alt = task.attachmentName || "Ảnh đính kèm";
+                    imgPreview.classList.add('task-attachment-preview');
+                    taskElement.appendChild(imgPreview);
+                } else {
+                    const fileLink = document.createElement('a');
+                    fileLink.href = task.attachmentURL;
+                    fileLink.textContent = task.attachmentName || "Xem file đính kèm";
+                    fileLink.target = "_blank"; // Mở trong tab mới
+                    fileLink.classList.add('task-attachment-link');
+                    taskElement.appendChild(fileLink);
+                }
+            }
+
+
+            const detailsContainer = document.createElement('div');
+            detailsContainer.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'flex-wrap', 'mb-1', 'mt-1'); 
+
+            if (task.dueDate) {
+                const dueDateElement = document.createElement('p');
+                const [year, month, day] = task.dueDate.split('-');
+                const formattedDate = `${day}/${month}/${year}`;
+                dueDateElement.textContent = `Hạn: ${formattedDate}`;
+                dueDateElement.classList.add('task-due-date', 'mr-2'); 
+                const today = new Date(); today.setHours(0, 0, 0, 0); 
+                const dueDateObj = new Date(year, month - 1, day); 
+                if (dueDateObj < today) {
+                    dueDateElement.classList.add('due-date-passed');
+                    dueDateElement.textContent += " (Quá hạn)";
+                } else if (dueDateObj.getTime() === today.getTime()) {
+                    dueDateElement.classList.add('due-date-today');
+                    dueDateElement.textContent += " (Hôm nay)";
+                }
+                detailsContainer.appendChild(dueDateElement);
+            }
+
+            if (task.priority) {
+                const priorityIndicator = document.createElement('span');
+                priorityIndicator.classList.add('priority-indicator', `indicator-${task.priority}`);
+                priorityIndicator.textContent = task.priority === 'high' ? 'Cao' : task.priority === 'medium' ? 'TB' : 'Thấp';
+                detailsContainer.appendChild(priorityIndicator);
+            }
+            
+            if (detailsContainer.hasChildNodes()) taskElement.appendChild(detailsContainer);
+
+            const moveActionsContainer = document.createElement('div');
+            moveActionsContainer.classList.add('task-move-actions');
+
+            if (task.status !== 'todo') {
+                const moveToTodoBtn = document.createElement('button');
+                moveToTodoBtn.innerHTML = iconArrowLeft;
+                moveToTodoBtn.classList.add('move-btn-todo');
+                moveToTodoBtn.title = "Chuyển sang Cần làm";
+                moveToTodoBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'todo'); };
+                moveActionsContainer.appendChild(moveToTodoBtn);
+            }
+            if (task.status !== 'inprogress') {
+                const moveToInProgressBtn = document.createElement('button');
+                moveToInProgressBtn.innerHTML = (task.status === 'todo') ? iconArrowRight : iconArrowLeft;
+                moveToInProgressBtn.classList.add('move-btn-inprogress');
+                moveToInProgressBtn.title = "Chuyển sang Đang làm";
+                moveToInProgressBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'inprogress'); };
+                moveActionsContainer.appendChild(moveToInProgressBtn);
+            }
+            if (task.status !== 'done') {
+                const moveToDoneBtn = document.createElement('button');
+                moveToDoneBtn.innerHTML = iconCheck; 
+                moveToDoneBtn.classList.add('move-btn-done');
+                moveToDoneBtn.title = "Chuyển sang Hoàn thành";
+                moveToDoneBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'done'); };
+                moveActionsContainer.appendChild(moveToDoneBtn);
+            }
+            if (moveActionsContainer.hasChildNodes()) taskElement.appendChild(moveActionsContainer);
+            
+            taskElement.addEventListener('dragstart', handleDragStart);
+            if (columns[task.status]) columns[task.status].appendChild(taskElement);
+            else columns.todo.appendChild(taskElement); 
+        }
+        
+        async function deleteTask(taskId, attachmentPath) { // Thêm attachmentPath
+            if (!isAuthReady || !currentUserId) { alert("Bạn cần đăng nhập để xóa ghi chú."); return; }
+            const tasksCollectionPath = getTasksCollectionPath();
+            if (!tasksCollectionPath) return;
+
+            // Xóa file khỏi Storage trước (nếu có)
+            if (attachmentPath) {
+                const fileRef = storageRef(storage, attachmentPath);
+                try {
+                    await deleteObject(fileRef);
+                    console.log("Attachment deleted from Storage:", attachmentPath);
+                } catch (error) {
+                    console.error("Error deleting attachment from Storage:", error);
+                    // Tiếp tục xóa task khỏi Firestore dù có lỗi xóa file
+                }
+            }
+
+            try { 
+                await deleteDoc(doc(db, tasksCollectionPath, taskId)); 
+                console.log("Task deleted from Firestore:", taskId);
+            } 
+            catch (error) { alert("Lỗi khi xóa ghi chú khỏi Firestore: " + error.message); }
+        }
+
+        let draggedItem = null;
+        function handleDragStart(event) {
+            if (!event.target.classList.contains('task')) return;
+            draggedItem = event.target;
+            event.dataTransfer.setData('text/plain', event.target.dataset.id);
+            setTimeout(() => { if (draggedItem) draggedItem.classList.add('dragging'); }, 0);
+        }
+        columnElements.forEach(column => {
+            column.addEventListener('dragover', (e) => e.preventDefault());
+            column.addEventListener('dragenter', (e) => e.target.closest('.kanban-column')?.classList.add('drag-over'));
+            column.addEventListener('dragleave', (e) => e.target.closest('.kanban-column')?.classList.remove('drag-over'));
+            column.addEventListener('drop', handleDrop);
+        });
+
+        async function handleDrop(event) {
+            event.preventDefault();
+            const targetColumnElement = event.target.closest('.kanban-column');
+            if (!targetColumnElement || !draggedItem) return;
+            targetColumnElement.classList.remove('drag-over');
+            draggedItem.classList.remove('dragging');
+            const taskId = draggedItem.dataset.id;
+            const newStatus = targetColumnElement.dataset.status;
+            const oldStatus = draggedItem.dataset.status;
+            if (newStatus === oldStatus) { draggedItem = null; return; }
+            if (!isAuthReady || !currentUserId) { draggedItem = null; return; }
+            const tasksCollectionPath = getTasksCollectionPath();
+            if (!tasksCollectionPath) { draggedItem = null; return; }
+            const taskRef = doc(db, tasksCollectionPath, taskId);
+            try {
+                await updateDoc(taskRef, { status: newStatus });
+                if (newStatus === 'done') triggerConfetti();
+            } catch (error) {
+                alert("Lỗi khi cập nhật trạng thái ghi chú: " + error.message);
+            }
+            draggedItem = null;
+        }
+
+        if(addTaskBtn) addTaskBtn.addEventListener('click', () => openTaskModal()); 
+        if(fabAddTaskBtn) fabAddTaskBtn.addEventListener('click', () => openTaskModal());
+
+        closeModalBtn.addEventListener('click', closeAndResetModal);
+        window.addEventListener('click', (event) => { 
+            if (event.target == taskModal) closeAndResetModal();
+        });
+
+
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        let confettiParticles = [];
+        function resizeConfettiCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        resizeConfettiCanvas();
+        window.addEventListener('resize', resizeConfettiCanvas);
+        const confettiColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+        function ConfettiParticle(x, y) {
+            this.x = x; this.y = y; this.size = Math.random() * 7 + 3; 
+            this.speedX = Math.random() * 6 - 3; this.speedY = Math.random() * -15 - 5; 
+            this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            this.opacity = 1; this.angle = Math.random() * Math.PI * 2;
+            this.spin = Math.random() * 0.4 - 0.2; this.gravity = 0.3; this.drag = 0.98;
+        }
+        ConfettiParticle.prototype.update = function() {
+            this.speedY += this.gravity; this.speedX *= this.drag; this.x += this.speedX; this.y += this.speedY;
+            this.angle += this.spin; this.opacity -= 0.01; 
+        };
+        ConfettiParticle.prototype.draw = function() {
+            confettiCtx.save(); confettiCtx.globalAlpha = this.opacity;
+            confettiCtx.translate(this.x + this.size / 2, this.y + this.size / 2);
+            confettiCtx.rotate(this.angle); confettiCtx.fillStyle = this.color;
+            confettiCtx.fillRect(-this.size /2, -this.size /2, this.size, this.size * 1.5); 
+            confettiCtx.restore();
+        };
+        function createConfettiBurst() {
+            confettiParticles = []; 
+            const particleCount = 150; 
+            const centerX = confettiCanvas.width / 2; const centerY = confettiCanvas.height / 2; 
+            for (let i = 0; i < particleCount; i++) {
+                confettiParticles.push(new ConfettiParticle(centerX + (Math.random() - 0.5) * (confettiCanvas.width * 0.8), centerY + (Math.random() - 0.5) * (confettiCanvas.height * 0.6)));
+            }
+        }
+        let confettiAnimationId = null;
+        function animateConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            let stillAlive = false;
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i]; p.update(); p.draw();
+                if (p.opacity > 0 && p.y < confettiCanvas.height) stillAlive = true;
+                else confettiParticles.splice(i, 1); 
+            }
+            if (stillAlive) confettiAnimationId = requestAnimationFrame(animateConfetti);
+            else { confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); cancelAnimationFrame(confettiAnimationId); confettiAnimationId = null; }
+        }
+        function triggerConfetti() {
+            if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+            createConfettiBurst(); animateConfetti();
+        }
+        
+        function showCustomConfirm(message) {
+            return new Promise((resolve) => {
+                const confirmModal = document.createElement('div');
+                confirmModal.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000;`;
+                const confirmContent = document.createElement('div');
+                confirmContent.style.cssText = `background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; width: 90%; max-width: 350px;`;
+                const messageP = document.createElement('p');
+                messageP.textContent = message; messageP.style.cssText = 'margin-bottom: 20px; font-size: 1.1rem; color: #333;';
+                const yesButton = document.createElement('button'); yesButton.textContent = 'Có';
+                yesButton.style.cssText = `background-color: #ef4444; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px; font-weight: 500; transition: background-color 0.2s;`;
+                const noButton = document.createElement('button'); noButton.textContent = 'Không';
+                noButton.style.cssText = `background-color: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; transition: background-color 0.2s;`;
+                yesButton.onmouseover = () => yesButton.style.backgroundColor = '#dc2626'; yesButton.onmouseout = () => yesButton.style.backgroundColor = '#ef4444';
+                noButton.onmouseover = () => noButton.style.backgroundColor = '#4b5563'; noButton.onmouseout = () => noButton.style.backgroundColor = '#6b7280';
+                const closeConfirm = (result) => { document.body.removeChild(confirmModal); resolve(result); };
+                yesButton.onclick = () => closeConfirm(true); noButton.onclick = () => closeConfirm(false);
+                confirmContent.appendChild(messageP); confirmContent.appendChild(yesButton); confirmContent.appendChild(noButton);
+                confirmModal.appendChild(confirmContent); document.body.appendChild(confirmModal);
+            });
+        }
+    </script>
+</body>
+</html>
