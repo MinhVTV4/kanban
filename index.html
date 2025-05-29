@@ -1180,7 +1180,7 @@
             if (task.priority && !task.isPinned) { 
                  taskElement.classList.add(`priority-${task.priority}`);
             } else if (!task.isPinned) {
-                 taskElement.classList.add('priority-medium'); // Default border if not pinned and no priority
+                 taskElement.classList.add('priority-medium'); 
             }
 
 
@@ -1196,16 +1196,16 @@
             actionsContainer.classList.add('task-actions', 'flex', 'items-center', 'flex-shrink-0');
 
             const pinButton = document.createElement('button');
-            pinButton.classList.add('pin-btn'); // Base class for pin button styling
+            pinButton.classList.add('pin-btn'); 
             pinButton.innerHTML = task.isPinned ? iconPinSolid : iconPinOutline;
             pinButton.title = task.isPinned ? "Bỏ ghim" : "Ghim lên đầu";
-            if(task.isPinned) pinButton.classList.add('pinned'); // For specific "pinned" state styling if needed
+            if(task.isPinned) pinButton.classList.add('pinned'); 
             pinButton.onclick = (e) => { e.stopPropagation(); togglePinTask(task); };
             actionsContainer.appendChild(pinButton);
 
             const moreActionsButton = document.createElement('button');
             moreActionsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" fill="currentColor" style="width:0.7em; height:0.7em; display:inline-block; vertical-align:middle;"><path d="M64 360a56 56 0 100 112 56 56 0 100-112zm0-160a56 56 0 100 112 56 56 0 100-112zM120 96a56 56 0 10-112 0 56 56 0 10112 0z"/></svg>`;
-            moreActionsButton.classList.add('text-slate-500', 'hover:text-slate-700'); // General styling for more actions
+            moreActionsButton.classList.add('text-slate-500', 'hover:text-slate-700'); 
             moreActionsButton.title = "Thêm hành động";
             moreActionsButton.onclick = (e) => {
                 e.stopPropagation();
@@ -1267,20 +1267,9 @@
 
             const taskFooterActions = document.createElement('div');
             taskFooterActions.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'mt-2', 'pt-2', 'border-t', 'border-slate-200');
-
-            const createdAtElement = document.createElement('p');
-            if (task.createdAt && task.createdAt.toDate) {
-                const createdAtDate = task.createdAt.toDate();
-                const formattedCreatedAt = `${createdAtDate.getDate().toString().padStart(2, '0')}/${(createdAtDate.getMonth() + 1).toString().padStart(2, '0')}/${createdAtDate.getFullYear()} ${createdAtDate.getHours().toString().padStart(2, '0')}:${createdAtDate.getMinutes().toString().padStart(2, '0')}`;
-                createdAtElement.textContent = `Tạo: ${formattedCreatedAt}`;
-            } else {
-                createdAtElement.textContent = ''; // Ensure it's an empty string if no date
-            }
-            createdAtElement.classList.add('text-xs', 'text-slate-500', 'mr-auto'); // mr-auto to push buttons to the right
-            taskFooterActions.appendChild(createdAtElement);
             
             const actualMoveButtonsGroup = document.createElement('div');
-            actualMoveButtonsGroup.classList.add('flex', 'items-center', 'gap-x-1'); 
+            actualMoveButtonsGroup.classList.add('flex', 'items-center', 'gap-x-1', 'mr-auto'); // Add mr-auto here to push timestamp to the right
 
             if (task.status !== 'todo') {
                 const moveToTodoBtn = document.createElement('button');
@@ -1310,10 +1299,25 @@
             
             if (actualMoveButtonsGroup.hasChildNodes()) {
                 taskFooterActions.appendChild(actualMoveButtonsGroup);
+            } else {
+                 // Add an empty div to maintain space if no move buttons, so timestamp stays right
+                const emptyDivForSpacing = document.createElement('div');
+                emptyDivForSpacing.classList.add('mr-auto'); // Ensure it pushes timestamp
+                taskFooterActions.appendChild(emptyDivForSpacing);
             }
+
+            const createdAtElement = document.createElement('p');
+            if (task.createdAt && task.createdAt.toDate) {
+                const createdAtDate = task.createdAt.toDate();
+                const formattedCreatedAt = `${createdAtDate.getDate().toString().padStart(2, '0')}/${(createdAtDate.getMonth() + 1).toString().padStart(2, '0')}/${createdAtDate.getFullYear()} ${createdAtDate.getHours().toString().padStart(2, '0')}:${createdAtDate.getMinutes().toString().padStart(2, '0')}`;
+                createdAtElement.textContent = formattedCreatedAt; // Removed "Tạo: "
+            } else {
+                createdAtElement.textContent = ''; 
+            }
+            createdAtElement.classList.add('text-xs', 'text-slate-500'); 
+            taskFooterActions.appendChild(createdAtElement);
             
-            // Only append footer if it has a timestamp or move buttons
-            if ((task.createdAt && task.createdAt.toDate) || actualMoveButtonsGroup.hasChildNodes()) {
+            if (taskFooterActions.hasChildNodes()) { 
                  taskElement.appendChild(taskFooterActions);
             }
 
