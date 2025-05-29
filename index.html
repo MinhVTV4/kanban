@@ -10,13 +10,16 @@
             font-family: 'Inter', sans-serif;
             overscroll-behavior: none; 
         }
-        .kanban-column {
+        /* Chiều cao cho khu vực cuộn chứa các task trong mỗi cột */
+        .task-list-scrollable {
             min-height: 200px; 
             overflow-y: auto; 
-            height: calc(100vh - 70px); 
+            /* Mobile: VP - Header (40) - Tabs (khoảng 40) - Padding/Margin (~30) = ~110 */
+            height: calc(100vh - 110px - 40px); /* Trừ thêm chiều cao ước tính của tab bar */
         }
         @media (min-width: 768px) { /* md breakpoint and up */
-            .kanban-column {
+            .task-list-scrollable {
+                /* Desktop: VP - Header (40) - AddBtn Desktop (40) - Margins/Paddings (~40) = ~120 */
                 height: calc(100vh - 120px); 
             }
         }
@@ -91,13 +94,13 @@
             margin: 0;
             flex-grow: 1;
             margin-right: 1rem;
-            word-break: break-word; /* Wrap long text */
+            word-break: break-word; 
         }
         .archived-task-item .actions button {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
             margin-left: 0.5rem;
-            white-space: nowrap; /* Prevent button text wrapping */
+            white-space: nowrap; 
         }
         .close-button {
             color: #aaa;
@@ -112,12 +115,12 @@
             cursor: pointer;
         }
         
-        .kanban-column::-webkit-scrollbar, #archivedTasksList::-webkit-scrollbar { width: 8px; }
-        .kanban-column::-webkit-scrollbar-track, #archivedTasksList::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        .kanban-column::-webkit-scrollbar-thumb, #archivedTasksList::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-        .kanban-column::-webkit-scrollbar-thumb:hover, #archivedTasksList::-webkit-scrollbar-thumb:hover { background: #555; }
+        .task-list-scrollable::-webkit-scrollbar, #archivedTasksList::-webkit-scrollbar { width: 8px; }
+        .task-list-scrollable::-webkit-scrollbar-track, #archivedTasksList::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .task-list-scrollable::-webkit-scrollbar-thumb, #archivedTasksList::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .task-list-scrollable::-webkit-scrollbar-thumb:hover, #archivedTasksList::-webkit-scrollbar-thumb:hover { background: #555; }
         
-        #appContent { display: none; }
+        #appContentContainer { display: none; } 
         .auth-form-container {
             max-width: 400px;
             margin: 2rem auto;
@@ -295,6 +298,45 @@
             margin-left: 0.5rem; 
         }
 
+        /* Tab Styles */
+        #kanbanTabs {
+            border-bottom: 1px solid #e2e8f0; 
+            background-color: #f8fafc; 
+        }
+        .tab-button {
+            padding: 0.75rem 1rem; 
+            font-size: 0.875rem; 
+            font-weight: 500; 
+            color: #64748b; 
+            border-bottom: 3px solid transparent;
+            transition: color 0.2s ease, border-color 0.2s ease;
+            flex-grow: 1; 
+            text-align: center;
+            cursor: pointer;
+        }
+        .tab-button:hover {
+            color: #0f172a; 
+        }
+        .tab-button.active-tab {
+            color: #0ea5e9; 
+            border-bottom-color: #0ea5e9;
+        }
+        .kanban-main-column { 
+            /* Mặc định ẩn trên mobile, sẽ được JS thêm class 'block' hoặc 'hidden' */
+        }
+        @media (max-width: 767px) { /* Dưới md breakpoint */
+            .kanban-main-column {
+                display: none; /* Mặc định ẩn các cột trên mobile */
+            }
+            .kanban-main-column.active-column-mobile {
+                display: block !important; /* Hiển thị cột active */
+            }
+            #appContent { /* Bỏ grid trên mobile để các cột không bị xếp ngang */
+                display: block;
+            }
+        }
+
+
         /* Bottom Sheet Styles */
         #moveTaskBottomSheet {
             position: fixed;
@@ -401,39 +443,47 @@
             <p id="registerAuthError" class="text-red-500 text-sm mt-3 text-center"></p>
         </div>
 
+        <div id="appContentContainer">
+            <div id="addTaskBtnContainerDesktop" class="hidden md:flex"> 
+                <button id="addTaskBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out">
+                    Thêm ghi chú
+                </button>
+                <button id="viewArchivedBtnDesktop" class="ml-2 bg-slate-500 hover:bg-slate-600 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out">
+                    Xem Lưu Trữ
+                </button>
+            </div>
 
-        <div id="addTaskBtnContainerDesktop" class="hidden md:flex"> 
-            <button id="addTaskBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out">
-                Thêm ghi chú
-            </button>
-            <button id="viewArchivedBtnDesktop" class="ml-2 bg-slate-500 hover:bg-slate-600 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out">
-                Xem Lưu Trữ
-            </button>
+            <div id="kanbanTabs" class="flex md:hidden">
+                <button class="tab-button" data-status="todo">Cần làm</button>
+                <button class="tab-button" data-status="inprogress">Đang làm</button>
+                <button class="tab-button" data-status="done">Hoàn thành</button>
+            </div>
+
+            <div id="appContent" class="md:grid md:grid-cols-3 md:gap-4 md:gap-6">
+                <div id="todo-column-wrapper" class="kanban-main-column bg-rose-100 p-4 rounded-lg shadow-lg" data-status="todo">
+                    <h2 class="text-xl font-semibold text-rose-700 mb-4 border-b-2 border-rose-300 pb-2 flex justify-between items-center">
+                        <span>Cần làm</span>
+                        <span id="todo-count" class="column-header-count">0</span>
+                    </h2>
+                    <div id="todo-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
+                </div>
+                <div id="inprogress-column-wrapper" class="kanban-main-column bg-amber-100 p-4 rounded-lg shadow-lg" data-status="inprogress">
+                    <h2 class="text-xl font-semibold text-amber-700 mb-4 border-b-2 border-amber-300 pb-2 flex justify-between items-center">
+                        <span>Đang làm</span>
+                        <span id="inprogress-count" class="column-header-count">0</span>
+                    </h2>
+                    <div id="inprogress-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
+                </div>
+                <div id="done-column-wrapper" class="kanban-main-column bg-green-100 p-4 rounded-lg shadow-lg" data-status="done">
+                    <h2 class="text-xl font-semibold text-green-700 mb-4 border-b-2 border-green-300 pb-2 flex justify-between items-center">
+                        <span>Hoàn thành</span>
+                        <span id="done-count" class="column-header-count">0</span>
+                    </h2>
+                    <div id="done-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
+                </div>
+            </div>
         </div>
 
-        <div id="appContent" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div id="todo" class="bg-rose-100 p-4 rounded-lg shadow-lg kanban-column" data-status="todo">
-                <h2 class="text-xl font-semibold text-rose-700 mb-4 border-b-2 border-rose-300 pb-2 flex justify-between items-center">
-                    <span>Cần làm</span>
-                    <span id="todo-count" class="column-header-count">0</span>
-                </h2>
-                <div id="todo-tasks" class="space-y-3 task-list min-h-[100px]"></div>
-            </div>
-            <div id="inprogress" class="bg-amber-100 p-4 rounded-lg shadow-lg kanban-column" data-status="inprogress">
-                <h2 class="text-xl font-semibold text-amber-700 mb-4 border-b-2 border-amber-300 pb-2 flex justify-between items-center">
-                    <span>Đang làm</span>
-                    <span id="inprogress-count" class="column-header-count">0</span>
-                </h2>
-                <div id="inprogress-tasks" class="space-y-3 task-list min-h-[100px]"></div>
-            </div>
-            <div id="done" class="bg-green-100 p-4 rounded-lg shadow-lg kanban-column" data-status="done">
-                <h2 class="text-xl font-semibold text-green-700 mb-4 border-b-2 border-green-300 pb-2 flex justify-between items-center">
-                    <span>Hoàn thành</span>
-                    <span id="done-count" class="column-header-count">0</span>
-                </h2>
-                <div id="done-tasks" class="space-y-3 task-list min-h-[100px]"></div>
-            </div>
-        </div>
 
         <button id="fabAddTaskBtn" class="block md:hidden fixed bottom-6 right-6 bg-sky-500 hover:bg-sky-600 text-white rounded-full shadow-lg flex items-center justify-center z-50" title="Thêm ghi chú mới">
             +
@@ -441,7 +491,7 @@
     </div>
 
     <div id="taskModal" class="modal">
-        <div class="modal-content bg-white rounded-lg shadow-xl">
+        <div class="modal-content">
             <span id="closeModalBtn" class="close-button">&times;</span>
             <h3 id="modalTitle" class="text-2xl font-semibold mb-6 text-slate-700">Thêm ghi chú mới</h3>
             
@@ -527,7 +577,7 @@
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyDPEaExmwMz2mQWN_vDDTdziegQUfUrLaA", // <-- KIỂM TRA KỸ GIÁ TRỊ NÀY!
+            apiKey: "AIzaSyDPEaExmwMz2mQWN_vDDTdziegQUfUrLaA", 
             authDomain: "ghichucode.firebaseapp.com", 
             projectId: "ghichucode", 
             storageBucket: "ghichucode.firebasestorage.app", 
@@ -559,17 +609,20 @@
 
         let loginFormContainer, registerFormContainer, emailInput, passwordInput, loginBtn, showRegisterBtn,
             registerEmailInput, registerPasswordInput, registerBtn, showLoginBtn, authError, registerAuthError,
-            appHeader, logoutBtn, appContent, addTaskBtnContainerDesktop, addTaskBtn, fabAddTaskBtn,
+            appHeader, logoutBtn, appContentContainer, appContent, addTaskBtnContainerDesktop, addTaskBtn, fabAddTaskBtn,
             taskModal, closeModalBtn, saveTaskBtn, taskInput, taskDueDateInput, taskPriorityInput,
             taskAttachmentInput, attachmentPreview, currentAttachmentInfo, currentAttachmentLink,
             removeAttachmentBtn, uploadSpinner, modalTitle,
             todoCountSpan, inprogressCountSpan, doneCountSpan,
             viewArchivedBtnDesktop, viewArchivedBtnMobile, archivedTasksModal, closeArchivedModalBtn, archivedTasksList,
-            moveTaskBottomSheet, bottomSheetOverlay, bottomSheetOptionsList, bottomSheetCloseBtn;
+            moveTaskBottomSheet, bottomSheetOverlay, bottomSheetOptionsList, bottomSheetCloseBtn,
+            kanbanTabsContainer;
         let activeBottomSheetTaskId = null;
+        let tabButtons = [];
+        let columnWrappers = {};
         
-        let columns = {};
-        let columnElements = [];
+        let columns = {}; // Giữ lại columns cho renderTask
+        let columnElements = []; // Giữ lại columnElements cho handleDrop
 
         const iconArrowLeft = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>`;
         const iconArrowRight = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>`;
@@ -595,7 +648,7 @@
             
             appHeader = document.getElementById('appHeader'); 
             logoutBtn = document.getElementById('logoutBtn');
-
+            appContentContainer = document.getElementById('appContentContainer');
             appContent = document.getElementById('appContent');
             addTaskBtnContainerDesktop = document.getElementById('addTaskBtnContainerDesktop'); 
             addTaskBtn = document.getElementById('addTaskBtn'); 
@@ -615,12 +668,17 @@
             uploadSpinner = document.getElementById('uploadSpinner');
             modalTitle = document.getElementById('modalTitle'); 
             
-            columns = {
+            columns = { // Divs chứa các task list
                 todo: document.getElementById('todo-tasks'),
                 inprogress: document.getElementById('inprogress-tasks'),
                 done: document.getElementById('done-tasks')
             };
-            columnElements = document.querySelectorAll('.kanban-column');
+            columnWrappers = { // Divs cha của từng cột (để show/hide trên mobile)
+                todo: document.getElementById('todo-column-wrapper'),
+                inprogress: document.getElementById('inprogress-column-wrapper'),
+                done: document.getElementById('done-column-wrapper')
+            };
+            columnElements = document.querySelectorAll('.kanban-main-column'); // Dùng cho drag/drop
 
             todoCountSpan = document.getElementById('todo-count');
             inprogressCountSpan = document.getElementById('inprogress-count');
@@ -636,6 +694,8 @@
             bottomSheetOverlay = document.getElementById('bottomSheetOverlay');
             bottomSheetOptionsList = document.getElementById('bottomSheetOptionsList');
             bottomSheetCloseBtn = document.getElementById('bottomSheetCloseBtn');
+
+            kanbanTabsContainer = document.getElementById('kanbanTabs');
 
             confettiCanvas = document.getElementById('confettiCanvas');
             if (confettiCanvas) { 
@@ -721,8 +781,8 @@
             columnElements.forEach(column => {
                 if (column) {
                     column.addEventListener('dragover', (e) => e.preventDefault());
-                    column.addEventListener('dragenter', (e) => e.target.closest('.kanban-column')?.classList.add('drag-over'));
-                    column.addEventListener('dragleave', (e) => e.target.closest('.kanban-column')?.classList.remove('drag-over'));
+                    column.addEventListener('dragenter', (e) => e.target.closest('.kanban-main-column')?.classList.add('drag-over'));
+                    column.addEventListener('dragleave', (e) => e.target.closest('.kanban-main-column')?.classList.remove('drag-over'));
                     column.addEventListener('drop', handleDrop);
                 }
             });
@@ -736,11 +796,22 @@
                 if (archivedTasksModal && event.target == archivedTasksModal) { 
                     archivedTasksModal.style.display = 'none';
                 }
-                 if (moveTaskBottomSheet && event.target == bottomSheetOverlay) { // Đóng bottom sheet khi click overlay
+                 if (moveTaskBottomSheet && event.target == bottomSheetOverlay) { 
                     closeMoveTaskBottomSheet();
                 }
             });
-            window.addEventListener('resize', resizeConfettiCanvas);
+            window.addEventListener('resize', () => {
+                resizeConfettiCanvas();
+                // Re-apply tab logic on resize if needed, especially for orientation changes on mobile
+                if (isAuthReady && window.innerWidth < 768) {
+                    const currentActiveTab = kanbanTabsContainer.querySelector('.active-tab');
+                    setActiveTab(currentActiveTab ? currentActiveTab.dataset.status : 'todo');
+                } else if (isAuthReady && window.innerWidth >= 768) {
+                     Object.values(columnWrappers).forEach(wrapper => {
+                        if(wrapper) wrapper.classList.remove('hidden', 'active-column-mobile');
+                    });
+                }
+            });
             
             if (viewArchivedBtnDesktop) viewArchivedBtnDesktop.addEventListener('click', loadAndShowArchivedTasks);
             if (viewArchivedBtnMobile) viewArchivedBtnMobile.addEventListener('click', loadAndShowArchivedTasks);
@@ -748,6 +819,13 @@
                 if(archivedTasksModal) archivedTasksModal.style.display = 'none';
             });
             if (bottomSheetCloseBtn) bottomSheetCloseBtn.addEventListener('click', closeMoveTaskBottomSheet);
+
+            if (kanbanTabsContainer) {
+                tabButtons = Array.from(kanbanTabsContainer.querySelectorAll('.tab-button'));
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => setActiveTab(button.dataset.status));
+                });
+            }
 
             resizeConfettiCanvas(); 
         }
@@ -757,30 +835,59 @@
             if (loginFormContainer) loginFormContainer.style.display = 'block';
             if (registerFormContainer) registerFormContainer.style.display = 'none';
             if (appHeader) appHeader.style.display = 'none'; 
-            if (appContent) appContent.style.display = 'none';
-            if (addTaskBtnContainerDesktop) addTaskBtnContainerDesktop.style.display = 'none'; 
-            if (fabAddTaskBtn) fabAddTaskBtn.style.display = 'none'; 
+            if (appContentContainer) appContentContainer.style.display = 'none'; // Ẩn container chính
         }
 
         function showRegisterForm() {
             if (loginFormContainer) loginFormContainer.style.display = 'none';
             if (registerFormContainer) registerFormContainer.style.display = 'block';
             if (appHeader) appHeader.style.display = 'none'; 
-            if (appContent) appContent.style.display = 'none';
-            if (addTaskBtnContainerDesktop) addTaskBtnContainerDesktop.style.display = 'none';
-            if (fabAddTaskBtn) fabAddTaskBtn.style.display = 'none';
+            if (appContentContainer) appContentContainer.style.display = 'none';
         }
         
         function showAppContent(user) {
             if (loginFormContainer) loginFormContainer.style.display = 'none';
             if (registerFormContainer) registerFormContainer.style.display = 'none';
             if (appHeader) appHeader.style.display = 'flex'; 
-            if (appContent) appContent.style.display = 'grid'; 
+            if (appContentContainer) appContentContainer.style.display = 'block'; // Hiển thị container chính
             
-            if (addTaskBtnContainerDesktop) addTaskBtnContainerDesktop.style.display = ''; 
-            if (fabAddTaskBtn) fabAddTaskBtn.style.display = ''; 
-
             if (logoutBtn) logoutBtn.classList.remove('hidden'); 
+
+            if (window.innerWidth < 768) { // md breakpoint
+                setActiveTab('todo'); 
+            } else { 
+                Object.values(columnWrappers).forEach(wrapper => {
+                    if(wrapper) {
+                        wrapper.classList.remove('hidden', 'active-column-mobile');
+                        // For desktop, ensure they are displayed by Tailwind's md:grid on #appContent
+                    }
+                });
+                 if (kanbanTabsContainer) kanbanTabsContainer.classList.add('md:hidden'); // Ensure tabs are hidden on desktop
+            }
+        }
+
+        function setActiveTab(status) {
+            if (!status || !tabButtons.length || !Object.keys(columnWrappers).length) return; 
+
+            tabButtons.forEach(button => {
+                if (button.dataset.status === status) {
+                    button.classList.add('active-tab');
+                } else {
+                    button.classList.remove('active-tab');
+                }
+            });
+
+            Object.values(columnWrappers).forEach(wrapper => {
+                if (wrapper) { 
+                    if (wrapper.dataset.status === status) {
+                        wrapper.classList.remove('hidden'); 
+                        wrapper.classList.add('active-column-mobile'); 
+                    } else {
+                        wrapper.classList.add('hidden');
+                        wrapper.classList.remove('active-column-mobile'); 
+                    }
+                }
+            });
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -1090,7 +1197,10 @@
 
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 let taskCounts = { todo: 0, inprogress: 0, done: 0 };
-                Object.values(columns).forEach(colDiv => { if (colDiv) colDiv.innerHTML = ''; }); 
+                // Xóa task cũ trong các div con, không phải wrapper
+                if (columns.todo) columns.todo.innerHTML = '';
+                if (columns.inprogress) columns.inprogress.innerHTML = '';
+                if (columns.done) columns.done.innerHTML = '';
                 
                 snapshot.forEach((docSnap) => {
                     const taskData = { id: docSnap.id, ...docSnap.data() };
@@ -1106,8 +1216,9 @@
                 if(inprogressCountSpan) inprogressCountSpan.textContent = taskCounts.inprogress;
                 if(doneCountSpan) doneCountSpan.textContent = taskCounts.done;
 
-                Object.entries(columns).forEach(([statusKey, columnDiv]) => {
-                    if (columnDiv && columnDiv.children.length === 0) { 
+                Object.entries(columns).forEach(([statusKey, columnTaskListDiv]) => {
+                    const columnWrapper = columnWrappers[statusKey]; // Lấy wrapper tương ứng
+                    if (columnTaskListDiv && columnTaskListDiv.children.length === 0) { 
                         const placeholder = document.createElement('div');
                         placeholder.classList.add('empty-column-placeholder');
                         const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>`;
@@ -1119,7 +1230,7 @@
                         else if (statusKey === 'done') message = "Chưa có ghi chú nào hoàn thành.";
                         messageP.textContent = message;
                         placeholder.appendChild(messageP);
-                        columnDiv.appendChild(placeholder);
+                        columnTaskListDiv.appendChild(placeholder); // Thêm placeholder vào div task list
                     }
                 });
                  const firestoreErrorElement = document.querySelector('.firestore-error');
@@ -1169,7 +1280,7 @@
             actionsContainer.appendChild(deleteButton);
 
             const moreActionsButton = document.createElement('button');
-            moreActionsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" fill="currentColor" style="width:0.7em; height:0.7em; display:inline-block; vertical-align:middle;"><path d="M64 360a56 56 0 100 112 56 56 0 100-112zm0-160a56 56 0 100 112 56 56 0 100-112zM120 96a56 56 0 10-112 0 56 56 0 10112 0z"/></svg>`; // Icon ba chấm dọc nhỏ hơn
+            moreActionsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" fill="currentColor" style="width:0.7em; height:0.7em; display:inline-block; vertical-align:middle;"><path d="M64 360a56 56 0 100 112 56 56 0 100-112zm0-160a56 56 0 100 112 56 56 0 100-112zM120 96a56 56 0 10-112 0 56 56 0 10112 0z"/></svg>`; 
             moreActionsButton.classList.add('text-slate-500', 'hover:text-slate-700');
             moreActionsButton.title = "Thêm hành động";
             moreActionsButton.onclick = (e) => {
@@ -1267,6 +1378,7 @@
             if (moveActionsContainer.hasChildNodes()) taskElement.appendChild(moveActionsContainer);
             
             taskElement.addEventListener('dragstart', handleDragStart);
+            // Append task to the correct task list div (e.g., #todo-tasks)
             if (columns[task.status]) columns[task.status].appendChild(taskElement);
             else if (columns.todo) columns.todo.appendChild(taskElement); 
         }
@@ -1295,13 +1407,13 @@
         
         async function handleDrop(event) {
             event.preventDefault();
-            const targetColumnElement = event.target.closest('.kanban-column');
-            if (!targetColumnElement || !draggedItem) return;
+            const targetColumnWrapper = event.target.closest('.kanban-main-column'); // Thả vào wrapper cột
+            if (!targetColumnWrapper || !draggedItem) return;
 
-            targetColumnElement.classList.remove('drag-over');
+            targetColumnWrapper.classList.remove('drag-over'); // Xóa class drag-over khỏi wrapper
             const draggedItemId = draggedItem.dataset.id;
             const originalStatus = draggedItem.dataset.status;
-            const newStatus = targetColumnElement.dataset.status;
+            const newStatus = targetColumnWrapper.dataset.status; // Lấy status từ wrapper
 
             draggedItem.classList.remove('dragging');
             let newOrder;
@@ -1313,7 +1425,7 @@
             if (originalStatus === newStatus) { 
                 const mouseY = event.clientY;
                 let nextSibling = null;
-                const currentColumnTasksDiv = columns[newStatus]; 
+                const currentColumnTasksDiv = columns[newStatus]; // Vẫn dùng div task list để tìm sibling
 
                 for (const child of currentColumnTasksDiv.children) {
                     if (child === draggedItem || !child.classList.contains('task')) continue;
