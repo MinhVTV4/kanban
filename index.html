@@ -151,6 +151,8 @@
         .move-btn-todo { background-color: #fecaca20; color: #b91c1c; border-color: #fca5a580; } 
         .move-btn-inprogress { background-color: #fed7aa20; color: #c2410c; border-color: #fdba7480; } 
         .move-btn-done { background-color: #bbf7d020; color: #15803d; border-color: #86efac80; } 
+        .archive-btn { background-color: #e2e8f020; color: #4a5568; border-color: #cbd5e080; } /* gray-200, gray-700, gray-300 */
+
 
         .task-actions .edit-btn { color: #3b82f6; } 
         .task-actions .delete-btn { color: #ef4444; } 
@@ -289,12 +291,12 @@
             100% { transform: rotate(360deg); }
         }
         .column-header-count {
-            font-size: 0.875rem; /* text-sm */
-            color: #4a5568; /* gray-700 */
-            background-color: #e2e8f0; /* gray-200 */
-            padding: 0.125rem 0.5rem; /* py-0.5 px-2 */
-            border-radius: 9999px; /* rounded-full */
-            margin-left: 0.5rem; /* ml-2 */
+            font-size: 0.875rem; 
+            color: #4a5568; 
+            background-color: #e2e8f0; 
+            padding: 0.125rem 0.5rem; 
+            border-radius: 9999px; 
+            margin-left: 0.5rem; 
         }
 
     </style>
@@ -481,7 +483,7 @@
             taskModal, closeModalBtn, saveTaskBtn, taskInput, taskDueDateInput, taskPriorityInput,
             taskAttachmentInput, attachmentPreview, currentAttachmentInfo, currentAttachmentLink,
             removeAttachmentBtn, uploadSpinner, modalTitle,
-            todoCountSpan, inprogressCountSpan, doneCountSpan; // Thêm biến cho các span đếm
+            todoCountSpan, inprogressCountSpan, doneCountSpan; 
         
         let columns = {};
         let columnElements = [];
@@ -491,6 +493,8 @@
         const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>`;
         const iconEdit = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>`;
         const iconDelete = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.56 0c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
+        const iconArchive = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125V6.375c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v.001c0 .621.504 1.125 1.125 1.125z" /></svg>`;
+
 
         function initializeDOMReferencesAndEvents() {
             loginFormContainer = document.getElementById('loginFormContainer');
@@ -829,6 +833,26 @@
             }
         }
 
+        async function archiveTask(taskId) {
+            if (!isAuthReady || !currentUserId) {
+                alert("Bạn cần đăng nhập để thực hiện hành động này.");
+                return;
+            }
+            const tasksCollectionPath = getTasksCollectionPath();
+            if (!tasksCollectionPath) return;
+
+            const taskRef = doc(db, tasksCollectionPath, taskId);
+            try {
+                await updateDoc(taskRef, { 
+                    status: 'archived', 
+                    order: Date.now() // Cập nhật order để nếu có xem archived list thì nó ở cuối
+                });
+                console.log(`Task ${taskId} archived.`);
+            } catch (error) {
+                alert("Lỗi khi lưu trữ ghi chú: " + error.message);
+            }
+        }
+
 
         function loadTasks() {
             if (!isAuthReady || !currentUserId) return;
@@ -840,7 +864,11 @@
                 return;
             }
 
-            const q = query(collection(db, tasksCollectionPath), where("userId", "==", currentUserId), orderBy("order", "asc")); 
+            // Chỉ lấy các task chưa được lưu trữ để hiển thị trên bảng chính
+            const q = query(collection(db, tasksCollectionPath), 
+                            where("userId", "==", currentUserId),
+                            where("status", "in", ["todo", "inprogress", "done"]), // Chỉ lấy 3 trạng thái này
+                            orderBy("order", "asc")); 
 
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 let taskCounts = { todo: 0, inprogress: 0, done: 0 };
@@ -848,13 +876,15 @@
                 
                 snapshot.forEach((docSnap) => {
                     const taskData = { id: docSnap.id, ...docSnap.data() };
-                    renderTask(taskData);
-                    if (taskCounts.hasOwnProperty(taskData.status)) {
-                        taskCounts[taskData.status]++;
+                    // Kiểm tra lại status trước khi render, mặc dù query đã lọc
+                    if (["todo", "inprogress", "done"].includes(taskData.status)) {
+                        renderTask(taskData);
+                        if (taskCounts.hasOwnProperty(taskData.status)) {
+                            taskCounts[taskData.status]++;
+                        }
                     }
                 });
 
-                // Cập nhật số lượng task trên header cột
                 if(todoCountSpan) todoCountSpan.textContent = taskCounts.todo;
                 if(inprogressCountSpan) inprogressCountSpan.textContent = taskCounts.inprogress;
                 if(doneCountSpan) doneCountSpan.textContent = taskCounts.done;
@@ -990,7 +1020,14 @@
                 moveToInProgressBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'inprogress'); };
                 moveActionsContainer.appendChild(moveToInProgressBtn);
             }
-            if (task.status !== 'done') {
+            if (task.status === 'done') { // Chỉ hiển thị nút Archive khi task ở cột Done
+                const archiveBtn = document.createElement('button');
+                archiveBtn.innerHTML = iconArchive;
+                archiveBtn.classList.add('archive-btn');
+                archiveBtn.title = "Lưu trữ ghi chú";
+                archiveBtn.onclick = (e) => { e.stopPropagation(); archiveTask(task.id); };
+                moveActionsContainer.appendChild(archiveBtn);
+            } else if (task.status !== 'done') { // Hiển thị nút "Hoàn thành" nếu chưa ở Done
                 const moveToDoneBtn = document.createElement('button');
                 moveToDoneBtn.innerHTML = iconCheck; 
                 moveToDoneBtn.classList.add('move-btn-done');
@@ -998,6 +1035,8 @@
                 moveToDoneBtn.onclick = (e) => { e.stopPropagation(); moveTask(task.id, 'done'); };
                 moveActionsContainer.appendChild(moveToDoneBtn);
             }
+
+
             if (moveActionsContainer.hasChildNodes()) taskElement.appendChild(moveActionsContainer);
             
             taskElement.addEventListener('dragstart', handleDragStart);
