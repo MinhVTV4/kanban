@@ -39,7 +39,7 @@
             .kanban-main-column h2 { 
                 position: sticky;
                 z-index: 10; 
-                background-color: inherit; 
+                background-color: inherit; /* Để lấy màu nền của cột cha */
                 padding-top: 0.5rem; 
                 padding-bottom: 0.5rem;
                 cursor: pointer;
@@ -688,7 +688,7 @@
             });
             window.addEventListener('resize', () => {
                 resizeConfettiCanvas();
-                if (isAuthReady) { // Chỉ gọi showAppContent nếu đã đăng nhập
+                if (isAuthReady) { 
                     showAppContent(auth.currentUser);
                 }
             });
@@ -727,7 +727,7 @@
             if (logoutBtn) logoutBtn.classList.remove('hidden'); 
 
             if (window.innerWidth < 768) { 
-                if (appContent) appContent.style.display = 'block'; // Mobile: appContent cuộn được
+                if (appContent) appContent.style.display = 'block'; 
                 // Đặt lại top cho sticky headers mỗi khi showAppContent được gọi trên mobile
                 const doneHeaderHeight = stickyHeaders.done ? stickyHeaders.done.offsetHeight : 0;
                 const inprogressHeaderHeight = stickyHeaders.inprogress ? stickyHeaders.inprogress.offsetHeight : 0;
@@ -735,17 +735,16 @@
                 if (stickyHeaders.inprogress) stickyHeaders.inprogress.style.top = `${doneHeaderHeight}px`;
                 if (stickyHeaders.todo) stickyHeaders.todo.style.top = `${doneHeaderHeight + inprogressHeaderHeight}px`;
 
-                // Scroll to 'Cần làm'
-                if (appContent && columnWrappers.todo) {
+                if (appContent && columnWrappers.todo && appHeader) {
                      setTimeout(() => { 
-                        const appHeaderActualHeight = appHeader ? appHeader.offsetHeight + parseFloat(getComputedStyle(appHeader).marginBottom || '0') : 0;
-                        const targetOffset = columnWrappers.todo.offsetTop - appHeaderActualHeight;
+                        const appHeaderActualHeight = appHeader.offsetHeight + parseFloat(getComputedStyle(appHeader).marginBottom || '0');
+                        const targetOffset = columnWrappers.todo.offsetTop - appHeaderActualHeight - (doneHeaderHeight + inprogressHeaderHeight);
                         appContent.scrollTop = targetOffset > 0 ? targetOffset : 0;
-                     }, 150); // Tăng delay để chắc chắn layout đã render
+                     }, 150); 
                 }
 
-            } else { // Desktop
-                if (appContent) appContent.style.display = 'grid'; // Desktop: grid layout
+            } else { 
+                if (appContent) appContent.style.display = 'grid'; 
             }
         }
 
@@ -1076,7 +1075,7 @@
                 if(doneCountSpan) doneCountSpan.textContent = taskCounts.done;
 
                 Object.entries(columns).forEach(([statusKey, columnTaskListDiv]) => {
-                    const columnWrapper = columnWrappers[statusKey]; // Lấy wrapper tương ứng
+                    const columnWrapper = columnWrappers[statusKey]; 
                     if (columnTaskListDiv && columnTaskListDiv.children.length === 0) { 
                         const placeholder = document.createElement('div');
                         placeholder.classList.add('empty-column-placeholder');
@@ -1089,7 +1088,7 @@
                         else if (statusKey === 'done') message = "Chưa có ghi chú nào hoàn thành.";
                         messageP.textContent = message;
                         placeholder.appendChild(messageP);
-                        columnTaskListDiv.appendChild(placeholder); // Thêm placeholder vào div task list
+                        columnTaskListDiv.appendChild(placeholder); 
                     }
                 });
                  const firestoreErrorElement = document.querySelector('.firestore-error');
@@ -1266,13 +1265,13 @@
         
         async function handleDrop(event) {
             event.preventDefault();
-            const targetColumnWrapper = event.target.closest('.kanban-main-column'); // Thả vào wrapper cột
+            const targetColumnWrapper = event.target.closest('.kanban-main-column'); 
             if (!targetColumnWrapper || !draggedItem) return;
 
-            targetColumnWrapper.classList.remove('drag-over'); // Xóa class drag-over khỏi wrapper
+            targetColumnWrapper.classList.remove('drag-over'); 
             const draggedItemId = draggedItem.dataset.id;
             const originalStatus = draggedItem.dataset.status;
-            const newStatus = targetColumnWrapper.dataset.status; // Lấy status từ wrapper
+            const newStatus = targetColumnWrapper.dataset.status; 
 
             draggedItem.classList.remove('dragging');
             let newOrder;
@@ -1284,7 +1283,7 @@
             if (originalStatus === newStatus) { 
                 const mouseY = event.clientY;
                 let nextSibling = null;
-                const currentColumnTasksDiv = columns[newStatus]; // Vẫn dùng div task list để tìm sibling
+                const currentColumnTasksDiv = columns[newStatus]; 
 
                 for (const child of currentColumnTasksDiv.children) {
                     if (child === draggedItem || !child.classList.contains('task')) continue;
