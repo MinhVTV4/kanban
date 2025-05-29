@@ -176,8 +176,11 @@
         .empty-column-placeholder svg {
             width: 32px; height: 32px; margin-bottom: 0.5rem; opacity: 0.6;
         }
-        .task-actions svg, .task-footer-btn svg, .column-title-icon svg { width: 16px; height: 16px; } /* Unified SVG size */
+        /* Updated to include .column-title-icon svg size */
+        .task-actions svg, .task-footer-btn svg, .column-title-icon svg { width: 16px; height: 16px; } 
         #bottomSheetOptionsList button svg { width: 20px; height: 20px; } 
+        #kanbanTabs .tab-button svg { width: 16px; height: 16px; } /* Size for icons in tabs */
+
 
         #attachmentPreview {
             max-width: 100px; max-height: 100px; margin-top: 5px;
@@ -200,7 +203,7 @@
             background-color: transparent;
         }
         .tab-button {
-            padding: 0.75rem 1rem;
+            padding: 0.75rem 0.5rem; /* Adjusted padding for icons */
             font-size: 0.875rem;
             font-weight: 500;
             transition: color 0.2s ease, background-color 0.2s ease;
@@ -210,6 +213,9 @@
             border-radius: 6px 6px 0 0;
             margin-right: 2px;
             border-bottom: none;
+            display: flex; /* For icon and text alignment */
+            align-items: center;
+            justify-content: center;
         }
         .tab-button:last-child {
             margin-right: 0;
@@ -220,6 +226,9 @@
             .kanban-main-column { display: none; }
             .kanban-main-column.active-column-mobile { display: block !important; }
             #appContent { display: block; }
+            .kanban-main-column > h2 { /* This hides the H2 title in columns on mobile */
+                display: none; 
+            }
         }
 
         /* Bottom Sheet Styles */
@@ -310,9 +319,24 @@
             </div>
 
             <div id="kanbanTabs" class="flex md:hidden">
-                <button class="tab-button" data-status="todo">Cần làm</button>
-                <button class="tab-button" data-status="inprogress">Đang làm</button>
-                <button class="tab-button" data-status="done">Hoàn thành</button>
+                <button class="tab-button" data-status="todo">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                    </svg>
+                    <span>Cần làm</span>
+                </button>
+                <button class="tab-button" data-status="inprogress">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    <span>Đang làm</span>
+                </button>
+                <button class="tab-button" data-status="done">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span>Hoàn thành</span>
+                </button>
             </div>
 
             <div id="appContent" class="md:grid md:grid-cols-3 md:gap-4 md:gap-6">
@@ -1284,7 +1308,7 @@
             taskFooterActions.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'mt-2', 'pt-2', 'border-t', 'border-slate-200');
             
             const actualMoveButtonsGroup = document.createElement('div');
-            actualMoveButtonsGroup.classList.add('flex', 'items-center', 'gap-x-1'); // Removed mr-auto
+            actualMoveButtonsGroup.classList.add('flex', 'items-center', 'gap-x-1', 'mr-auto'); // mr-auto to push timestamp to right
 
             if (task.status !== 'todo') {
                 const moveToTodoBtn = document.createElement('button');
@@ -1312,28 +1336,28 @@
                 actualMoveButtonsGroup.appendChild(moveToDoneBtn);
             }
             
-            // Add move buttons group to the left
+            // Add move buttons group to the left side of the footer
             if (actualMoveButtonsGroup.hasChildNodes()) {
                 taskFooterActions.appendChild(actualMoveButtonsGroup);
             } else {
-                // If no move buttons, add an empty div to occupy space on the left,
-                // so the timestamp is pushed to the right by justify-between.
+                // If no move buttons, add an empty div with mr-auto to still push timestamp to the right
                 const emptyLeftDiv = document.createElement('div');
+                emptyLeftDiv.classList.add('mr-auto');
                 taskFooterActions.appendChild(emptyLeftDiv);
             }
 
+            // CreatedAt Timestamp on the right side of the footer
             const createdAtElement = document.createElement('p');
             if (task.createdAt && task.createdAt.toDate) {
                 const createdAtDate = task.createdAt.toDate();
                 const formattedCreatedAt = `${createdAtDate.getDate().toString().padStart(2, '0')}/${(createdAtDate.getMonth() + 1).toString().padStart(2, '0')}/${createdAtDate.getFullYear()} ${createdAtDate.getHours().toString().padStart(2, '0')}:${createdAtDate.getMinutes().toString().padStart(2, '0')}`;
-                createdAtElement.textContent = formattedCreatedAt; 
+                createdAtElement.textContent = formattedCreatedAt; // Removed "Tạo: " prefix
             } else {
                 createdAtElement.textContent = ''; 
             }
-            createdAtElement.classList.add('text-xs', 'text-slate-500', 'ml-auto'); // Add ml-auto to push to the right
+            createdAtElement.classList.add('text-xs', 'text-slate-500'); // Removed ml-auto, as parent's justify-between and sibling's mr-auto handle positioning
             taskFooterActions.appendChild(createdAtElement);
             
-            // Only append footer if it has content (either timestamp or move buttons)
             if ((task.createdAt && task.createdAt.toDate) || actualMoveButtonsGroup.hasChildNodes()) {
                  taskElement.appendChild(taskFooterActions);
             }
