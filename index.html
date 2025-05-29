@@ -47,17 +47,9 @@
             color: #2c5282; 
         }
 
-        .task:active {
-            cursor: grabbing;
-        }
-        .dragging {
-            opacity: 0.5;
-            border: 2px dashed #cbd5e0; 
-        }
-        .drag-over {
-            border: 2px dashed #3b82f6; 
-            background-color: #eff6ff; 
-        }
+        .task:active { cursor: grabbing; }
+        .dragging { opacity: 0.5; border: 2px dashed #cbd5e0; }
+        .drag-over { border: 2px dashed #3b82f6; background-color: #eff6ff; }
         #confettiCanvas {
             position: fixed;
             top: 0;
@@ -71,27 +63,16 @@
             display: none; 
             position: fixed;
             z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.5);
+            justify-content: center; align-items: center;
         }
         .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 500px; /* Default modal */
+            background-color: #fefefe; margin: auto; padding: 20px;
+            border: 1px solid #888; width: 80%; max-width: 500px; 
             border-radius: 8px;
         }
-        #archivedTasksModal .modal-content { /* Larger modal for archived tasks */
-             max-width: 700px; 
-        }
+        #archivedTasksModal .modal-content { max-width: 700px; }
         #archivedTasksList {
             max-height: 60vh;
             overflow-y: auto;
@@ -110,14 +91,14 @@
             margin: 0;
             flex-grow: 1;
             margin-right: 1rem;
+            word-break: break-word; /* Wrap long text */
         }
         .archived-task-item .actions button {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
             margin-left: 0.5rem;
+            white-space: nowrap; /* Prevent button text wrapping */
         }
-
-
         .close-button {
             color: #aaa;
             float: right;
@@ -130,23 +111,13 @@
             text-decoration: none;
             cursor: pointer;
         }
-        .kanban-column::-webkit-scrollbar, #archivedTasksList::-webkit-scrollbar {
-            width: 8px;
-        }
-        .kanban-column::-webkit-scrollbar-track, #archivedTasksList::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        .kanban-column::-webkit-scrollbar-thumb, #archivedTasksList::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        .kanban-column::-webkit-scrollbar-thumb:hover, #archivedTasksList::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        #appContent { 
-            display: none;
-        }
+        
+        .kanban-column::-webkit-scrollbar, #archivedTasksList::-webkit-scrollbar { width: 8px; }
+        .kanban-column::-webkit-scrollbar-track, #archivedTasksList::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .kanban-column::-webkit-scrollbar-thumb, #archivedTasksList::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .kanban-column::-webkit-scrollbar-thumb:hover, #archivedTasksList::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        #appContent { display: none; }
         .auth-form-container {
             max-width: 400px;
             margin: 2rem auto;
@@ -155,21 +126,14 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        
         .task-actions button, .task-move-actions button {
-            margin-left: 4px;
-            padding: 4px; 
-            font-size: 0.75rem; 
-            border: 1px solid transparent;
-            border-radius: 0.25rem; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            width: 28px; 
-            height: 28px; 
+            margin-left: 4px; padding: 4px; font-size: 0.75rem; 
+            border: 1px solid transparent; border-radius: 0.25rem; 
+            display: flex; align-items: center; justify-content: center; 
+            width: 28px; height: 28px; 
         }
-        .task-actions button:hover, .task-move-actions button:hover {
-            opacity: 0.8;
-        }
+        .task-actions button:hover, .task-move-actions button:hover { opacity: 0.8; }
         .task-move-actions {
             margin-top: 6px; 
             width: 100%;
@@ -331,6 +295,66 @@
             margin-left: 0.5rem; 
         }
 
+        /* Bottom Sheet Styles */
+        #moveTaskBottomSheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            z-index: 1050; 
+            padding: 16px;
+            display: none; 
+        }
+        #moveTaskBottomSheet.active {
+            transform: translateY(0);
+            display: block;
+        }
+        #bottomSheetOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            z-index: 1040; 
+            display: none; 
+        }
+        #bottomSheetOverlay.active {
+            display: block;
+        }
+        #bottomSheetOptionsList button {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            text-align: left;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            color: #2d3748; 
+            border-bottom: 1px solid #edf2f7; 
+        }
+        #bottomSheetOptionsList button:last-child {
+            border-bottom: none;
+        }
+        #bottomSheetOptionsList button:hover {
+            background-color: #f7fafc; 
+        }
+        #bottomSheetCloseBtn {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            margin-top: 10px;
+            text-align: center;
+            border: none;
+            background-color: #e2e8f0; 
+            color: #4a5568; 
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -460,6 +484,14 @@
         </div>
     </div>
 
+    <div id="bottomSheetOverlay"></div>
+    <div id="moveTaskBottomSheet">
+        <h4 class="text-lg font-semibold mb-3 text-slate-700">Di chuyển ghi chú đến:</h4>
+        <div id="bottomSheetOptionsList">
+            </div>
+        <button id="bottomSheetCloseBtn" class="mt-4">Hủy</button>
+    </div>
+
     <canvas id="confettiCanvas"></canvas>
 
     <script type="module">
@@ -484,7 +516,7 @@
             orderBy, 
             Timestamp,
             setLogLevel,
-            getDocs // Thêm getDocs để đọc một lần
+            getDocs 
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js"; 
         import { 
             getStorage, 
@@ -494,9 +526,6 @@
             deleteObject
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
 
-        // QUAN TRỌNG: LỖI API KEY
-        // Nếu bạn gặp lỗi "auth/invalid-api-key", hãy đảm bảo giá trị `apiKey`
-        // trong `firebaseConfig` dưới đây là CHÍNH XÁC API Key từ project Firebase của bạn.
         const firebaseConfig = {
             apiKey: "AIzaSyDPEaExmwMz2mQWN_vDDTdziegQUfUrLaA", // <-- KIỂM TRA KỸ GIÁ TRỊ NÀY!
             authDomain: "ghichucode.firebaseapp.com", 
@@ -535,7 +564,9 @@
             taskAttachmentInput, attachmentPreview, currentAttachmentInfo, currentAttachmentLink,
             removeAttachmentBtn, uploadSpinner, modalTitle,
             todoCountSpan, inprogressCountSpan, doneCountSpan,
-            viewArchivedBtnDesktop, viewArchivedBtnMobile, archivedTasksModal, closeArchivedModalBtn, archivedTasksList;
+            viewArchivedBtnDesktop, viewArchivedBtnMobile, archivedTasksModal, closeArchivedModalBtn, archivedTasksList,
+            moveTaskBottomSheet, bottomSheetOverlay, bottomSheetOptionsList, bottomSheetCloseBtn;
+        let activeBottomSheetTaskId = null;
         
         let columns = {};
         let columnElements = [];
@@ -600,6 +631,11 @@
             archivedTasksModal = document.getElementById('archivedTasksModal');
             closeArchivedModalBtn = document.getElementById('closeArchivedModalBtn');
             archivedTasksList = document.getElementById('archivedTasksList');
+
+            moveTaskBottomSheet = document.getElementById('moveTaskBottomSheet');
+            bottomSheetOverlay = document.getElementById('bottomSheetOverlay');
+            bottomSheetOptionsList = document.getElementById('bottomSheetOptionsList');
+            bottomSheetCloseBtn = document.getElementById('bottomSheetCloseBtn');
 
             confettiCanvas = document.getElementById('confettiCanvas');
             if (confettiCanvas) { 
@@ -697,8 +733,11 @@
             if(closeModalBtn) closeModalBtn.addEventListener('click', closeAndResetModal);
             window.addEventListener('click', (event) => { 
                 if (taskModal && event.target == taskModal) closeAndResetModal();
-                if (archivedTasksModal && event.target == archivedTasksModal) { // Đóng modal lưu trữ
+                if (archivedTasksModal && event.target == archivedTasksModal) { 
                     archivedTasksModal.style.display = 'none';
+                }
+                 if (moveTaskBottomSheet && event.target == bottomSheetOverlay) { // Đóng bottom sheet khi click overlay
+                    closeMoveTaskBottomSheet();
                 }
             });
             window.addEventListener('resize', resizeConfettiCanvas);
@@ -708,6 +747,7 @@
             if (closeArchivedModalBtn) closeArchivedModalBtn.addEventListener('click', () => {
                 if(archivedTasksModal) archivedTasksModal.style.display = 'none';
             });
+            if (bottomSheetCloseBtn) bottomSheetCloseBtn.addEventListener('click', closeMoveTaskBottomSheet);
 
             resizeConfettiCanvas(); 
         }
@@ -1127,6 +1167,17 @@
                 }
             };
             actionsContainer.appendChild(deleteButton);
+
+            const moreActionsButton = document.createElement('button');
+            moreActionsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" fill="currentColor" style="width:0.7em; height:0.7em; display:inline-block; vertical-align:middle;"><path d="M64 360a56 56 0 100 112 56 56 0 100-112zm0-160a56 56 0 100 112 56 56 0 100-112zM120 96a56 56 0 10-112 0 56 56 0 10112 0z"/></svg>`; // Icon ba chấm dọc nhỏ hơn
+            moreActionsButton.classList.add('text-slate-500', 'hover:text-slate-700');
+            moreActionsButton.title = "Thêm hành động";
+            moreActionsButton.onclick = (e) => {
+                e.stopPropagation();
+                openMoveTaskBottomSheet(task.id, task.status);
+            };
+            actionsContainer.appendChild(moreActionsButton);
+
             mainContent.appendChild(actionsContainer);
             taskElement.appendChild(mainContent);
 
@@ -1304,6 +1355,50 @@
                 if (newStatus === 'done') triggerConfetti();
             }
             draggedItem = null; 
+        }
+
+        function openMoveTaskBottomSheet(taskId, currentStatus) {
+            activeBottomSheetTaskId = taskId;
+            if (!bottomSheetOptionsList || !moveTaskBottomSheet || !bottomSheetOverlay) return;
+
+            bottomSheetOptionsList.innerHTML = ''; 
+
+            const destinations = [
+                { id: 'todo', name: 'Cần làm' },
+                { id: 'inprogress', name: 'Đang làm' },
+                { id: 'done', name: 'Hoàn thành' }
+            ];
+
+            if (currentStatus === 'done') {
+                destinations.push({id: 'archived', name: 'Lưu trữ'});
+            }
+
+            destinations.forEach(dest => {
+                if (dest.id !== currentStatus) { 
+                    const button = document.createElement('button');
+                    button.textContent = dest.name;
+                    button.onclick = async () => {
+                        if (activeBottomSheetTaskId) {
+                            if (dest.id === 'archived') {
+                                await archiveTask(activeBottomSheetTaskId);
+                            } else {
+                                await moveTask(activeBottomSheetTaskId, dest.id);
+                            }
+                        }
+                        closeMoveTaskBottomSheet();
+                    };
+                    bottomSheetOptionsList.appendChild(button);
+                }
+            });
+
+            moveTaskBottomSheet.classList.add('active');
+            bottomSheetOverlay.classList.add('active');
+        }
+
+        function closeMoveTaskBottomSheet() {
+            if (moveTaskBottomSheet) moveTaskBottomSheet.classList.remove('active');
+            if (bottomSheetOverlay) bottomSheetOverlay.classList.remove('active');
+            activeBottomSheetTaskId = null;
         }
 
         function resizeConfettiCanvas() {
