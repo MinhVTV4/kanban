@@ -867,6 +867,8 @@
                 dueDate: dueDate || null,
                 priority: priority,
             };
+            
+            const isNewTask = !currentEditTaskId; // Check if it's a new task before trying to save
 
             try {
                 if (file) {
@@ -893,17 +895,23 @@
                 }
 
 
-                if (currentEditTaskId) {
+                if (currentEditTaskId) { // Editing existing task
                     const taskRefFirestore = doc(db, tasksCollectionPath, currentEditTaskId);
                     await updateDoc(taskRefFirestore, taskDataToSave);
-                } else {
-                    taskDataToSave.status = 'todo';
+                } else { // Adding new task
+                    taskDataToSave.status = 'todo'; // New tasks always start in 'todo'
                     taskDataToSave.userId = currentUserId;
                     taskDataToSave.createdAt = Timestamp.now();
                     taskDataToSave.order = Date.now();
                     await addDoc(collection(db, tasksCollectionPath), taskDataToSave);
                 }
                 closeAndResetModal();
+
+                // If a new task was added and on mobile, switch to 'todo' tab
+                if (isNewTask && window.innerWidth < 768) {
+                    setActiveTab('todo');
+                }
+
             } catch (error) {
                 alert("Lỗi khi lưu ghi chú: " + error.message);
             } finally {
@@ -920,6 +928,11 @@
             try {
                 await updateDoc(taskRef, { status: newStatus, order: Date.now() });
                 if (newStatus === 'done') triggerConfetti();
+
+                // If on mobile, switch to the new status tab
+                if (window.innerWidth < 768) {
+                    setActiveTab(newStatus);
+                }
             } catch (error) {
                 alert("Lỗi khi di chuyển ghi chú: " + error.message);
             }
@@ -940,6 +953,9 @@
                     order: Date.now()
                 });
                 console.log(`Task ${taskId} archived.`);
+                 // Optionally, if on mobile and you want to switch away from 'done' if it becomes empty
+                // or to a specific tab after archiving, add setActiveTab logic here.
+                // For now, it stays on the current tab.
             } catch (error) {
                 alert("Lỗi khi lưu trữ ghi chú: " + error.message);
             }
@@ -954,11 +970,16 @@
             const taskRef = doc(db, tasksCollectionPath, taskId);
             try {
                 await updateDoc(taskRef, {
-                    status: 'todo',
+                    status: 'todo', // Unarchived tasks go to 'todo'
                     order: Date.now()
                 });
                 console.log(`Task ${taskId} unarchived.`);
-                loadAndShowArchivedTasks();
+                loadAndShowArchivedTasks(); // Refresh the archived list
+
+                // If on mobile, switch to 'todo' tab to see the unarchived task
+                if (window.innerWidth < 768) {
+                    setActiveTab('todo');
+                }
             } catch (error) {
                 alert("Lỗi khi khôi phục ghi chú: " + error.message);
             }
@@ -980,7 +1001,7 @@
                 try {
                     await deleteDoc(doc(db, tasksCollectionPath, taskId));
                     console.log("Archived task permanently deleted.");
-                    loadAndShowArchivedTasks();
+                    loadAndShowArchivedTasks(); // Refresh the archived list
                 }
                 catch (error) { alert("Lỗi khi xóa vĩnh viễn ghi chú: " + error.message); }
             }
@@ -1336,10 +1357,14 @@
                     }
                 }
                 await updateDoc(taskRef, { order: newOrder });
-            } else {
+            } else { // Task moved to a different column
                 newOrder = Date.now();
                 await updateDoc(taskRef, { status: newStatus, order: newOrder });
                 if (newStatus === 'done') triggerConfetti();
+                // If on mobile, switch to the new status tab
+                if (window.innerWidth < 768) {
+                    setActiveTab(newStatus);
+                }
             }
             draggedItem = null;
         }
@@ -1369,7 +1394,7 @@
                             if (dest.id === 'archived') {
                                 await archiveTask(activeBottomSheetTaskId);
                             } else {
-                                await moveTask(activeBottomSheetTaskId, dest.id);
+                                await moveTask(activeBottomSheetTaskId, dest.id); // moveTask will handle setActiveTab
                             }
                         }
                         closeMoveTaskBottomSheet();
