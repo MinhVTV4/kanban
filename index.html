@@ -307,10 +307,31 @@
         </header>
 
         <div id="loginFormContainer" class="auth-form-container">
-            </div>
+            <h2 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Đăng nhập</h2>
+            <input type="email" id="emailInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Email">
+            <input type="password" id="passwordInput" class="w-full p-3 border border-slate-300 rounded-lg mb-6 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Mật khẩu">
+            <button id="loginBtn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out mb-3">
+                Đăng nhập
+            </button>
+            <button id="showRegisterBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
+                Đăng ký
+            </button>
+            <p id="authError" class="text-red-500 text-sm mt-3 text-center"></p>
+        </div>
         
         <div id="registerFormContainer" class="auth-form-container" style="display: none;">
-            </div>
+            <h2 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Đăng ký</h2>
+            <input type="email" id="registerEmailInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Email">
+            <input type="password" id="registerPasswordInput" class="w-full p-3 border border-slate-300 rounded-lg mb-6 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Mật khẩu (tối thiểu 6 ký tự)">
+            <button id="registerBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out mb-3">
+                Đăng ký
+            </button>
+            <button id="showLoginBtn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
+                Quay lại Đăng nhập
+            </button>
+            <p id="registerAuthError" class="text-red-500 text-sm mt-3 text-center"></p>
+        </div>
+
 
         <div id="addTaskBtnContainerDesktop" class="hidden md:flex"> 
             <button id="addTaskBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out">
@@ -394,7 +415,7 @@
             onSnapshot, 
             query, 
             where,
-            orderBy, // Thêm orderBy
+            orderBy, 
             Timestamp,
             setLogLevel
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js"; 
@@ -428,48 +449,24 @@
         let tasksUnsubscribe = null; 
         let currentEditTaskId = null; 
         let currentTaskDataForEdit = null; 
-
-        // ... (DOM references and SVG icons as before) ...
-        const loginFormContainer = document.getElementById('loginFormContainer');
-        const registerFormContainer = document.getElementById('registerFormContainer');
-        const emailInput = document.getElementById('emailInput');
-        const passwordInput = document.getElementById('passwordInput');
-        const loginBtn = document.getElementById('loginBtn');
-        const showRegisterBtn = document.getElementById('showRegisterBtn');
-        const registerEmailInput = document.getElementById('registerEmailInput');
-        const registerPasswordInput = document.getElementById('registerPasswordInput');
-        const registerBtn = document.getElementById('registerBtn');
-        const showLoginBtn = document.getElementById('showLoginBtn');
-        const authError = document.getElementById('authError');
-        const registerAuthError = document.getElementById('registerAuthError');
         
-        const appHeader = document.getElementById('appHeader'); 
-        const logoutBtn = document.getElementById('logoutBtn');
-
-        const appContent = document.getElementById('appContent');
-        const addTaskBtnContainerDesktop = document.getElementById('addTaskBtnContainerDesktop'); 
-        const addTaskBtn = document.getElementById('addTaskBtn'); 
-        const fabAddTaskBtn = document.getElementById('fabAddTaskBtn'); 
-
-        const taskModal = document.getElementById('taskModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const saveTaskBtn = document.getElementById('saveTaskBtn');
-        const taskInput = document.getElementById('taskInput');
-        const taskDueDateInput = document.getElementById('taskDueDateInput'); 
-        const taskPriorityInput = document.getElementById('taskPriorityInput'); 
-        const taskAttachmentInput = document.getElementById('taskAttachmentInput');
-        const attachmentPreview = document.getElementById('attachmentPreview');
-        const currentAttachmentInfo = document.getElementById('currentAttachmentInfo');
-        const currentAttachmentLink = document.getElementById('currentAttachmentLink');
-        const removeAttachmentBtn = document.getElementById('removeAttachmentBtn');
-        const uploadSpinner = document.getElementById('uploadSpinner');
-        const modalTitle = document.getElementById('modalTitle'); 
-        const columns = {
-            todo: document.getElementById('todo-tasks'),
-            inprogress: document.getElementById('inprogress-tasks'),
-            done: document.getElementById('done-tasks')
+        // Di chuyển khai báo hàm getTasksCollectionPath lên trước khi nó được sử dụng
+        const getTasksCollectionPath = () => {
+            if (!currentUserId) return null; 
+            return `artifacts/${appIdForPath}/users/${currentUserId}/kanbanTasks`;
         };
-        const columnElements = document.querySelectorAll('.kanban-column');
+
+        // DOM Elements - Đảm bảo các getElementById được gọi sau khi HTML đã được parse
+        // Hoặc đặt script ở cuối body, hoặc dùng DOMContentLoaded
+        let loginFormContainer, registerFormContainer, emailInput, passwordInput, loginBtn, showRegisterBtn,
+            registerEmailInput, registerPasswordInput, registerBtn, showLoginBtn, authError, registerAuthError,
+            appHeader, logoutBtn, appContent, addTaskBtnContainerDesktop, addTaskBtn, fabAddTaskBtn,
+            taskModal, closeModalBtn, saveTaskBtn, taskInput, taskDueDateInput, taskPriorityInput,
+            taskAttachmentInput, attachmentPreview, currentAttachmentInfo, currentAttachmentLink,
+            removeAttachmentBtn, uploadSpinner, modalTitle;
+        
+        let columns = {};
+        let columnElements = [];
 
         const iconArrowLeft = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>`;
         const iconArrowRight = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>`;
@@ -477,92 +474,188 @@
         const iconEdit = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>`;
         const iconDelete = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.56 0c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
 
+        // Hàm khởi tạo DOM references và gán sự kiện
+        function initializeDOMReferencesAndEvents() {
+            loginFormContainer = document.getElementById('loginFormContainer');
+            registerFormContainer = document.getElementById('registerFormContainer');
+            emailInput = document.getElementById('emailInput');
+            passwordInput = document.getElementById('passwordInput');
+            loginBtn = document.getElementById('loginBtn');
+            showRegisterBtn = document.getElementById('showRegisterBtn');
+            registerEmailInput = document.getElementById('registerEmailInput');
+            registerPasswordInput = document.getElementById('registerPasswordInput');
+            registerBtn = document.getElementById('registerBtn');
+            showLoginBtn = document.getElementById('showLoginBtn');
+            authError = document.getElementById('authError');
+            registerAuthError = document.getElementById('registerAuthError');
+            
+            appHeader = document.getElementById('appHeader'); 
+            logoutBtn = document.getElementById('logoutBtn');
 
-        taskAttachmentInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    attachmentPreview.src = e.target.result;
-                    attachmentPreview.style.display = 'block';
+            appContent = document.getElementById('appContent');
+            addTaskBtnContainerDesktop = document.getElementById('addTaskBtnContainerDesktop'); 
+            addTaskBtn = document.getElementById('addTaskBtn'); 
+            fabAddTaskBtn = document.getElementById('fabAddTaskBtn'); 
+
+            taskModal = document.getElementById('taskModal');
+            closeModalBtn = document.getElementById('closeModalBtn');
+            saveTaskBtn = document.getElementById('saveTaskBtn');
+            taskInput = document.getElementById('taskInput');
+            taskDueDateInput = document.getElementById('taskDueDateInput'); 
+            taskPriorityInput = document.getElementById('taskPriorityInput'); 
+            taskAttachmentInput = document.getElementById('taskAttachmentInput');
+            attachmentPreview = document.getElementById('attachmentPreview');
+            currentAttachmentInfo = document.getElementById('currentAttachmentInfo');
+            currentAttachmentLink = document.getElementById('currentAttachmentLink');
+            removeAttachmentBtn = document.getElementById('removeAttachmentBtn');
+            uploadSpinner = document.getElementById('uploadSpinner');
+            modalTitle = document.getElementById('modalTitle'); 
+            
+            columns = {
+                todo: document.getElementById('todo-tasks'),
+                inprogress: document.getElementById('inprogress-tasks'),
+                done: document.getElementById('done-tasks')
+            };
+            columnElements = document.querySelectorAll('.kanban-column');
+
+            // Gán sự kiện sau khi DOM elements đã được tham chiếu
+            if (loginBtn) loginBtn.addEventListener('click', async () => { /* ... (logic cũ) ... */ 
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                authError.textContent = '';
+                try { await signInWithEmailAndPassword(auth, email, password); } 
+                catch (error) { authError.textContent = "Đăng nhập thất bại: " + error.message; }
+            });
+            if (logoutBtn) logoutBtn.addEventListener('click', async () => { /* ... (logic cũ) ... */ 
+                try { await signOut(auth); } 
+                catch (error) { console.error("Error signing out: ", error); }
+            });
+            if (showRegisterBtn) showRegisterBtn.addEventListener('click', () => showRegisterForm());
+            if (showLoginBtn) showLoginBtn.addEventListener('click', () => showLoginForm());
+            if (registerBtn) registerBtn.addEventListener('click', async () => { /* ... (logic cũ) ... */ 
+                const email = registerEmailInput.value;
+                const password = registerPasswordInput.value;
+                registerAuthError.textContent = '';
+                try { await createUserWithEmailAndPassword(auth, email, password); } 
+                catch (error) { registerAuthError.textContent = "Đăng ký thất bại: " + error.message; }
+            });
+
+            if (taskAttachmentInput) taskAttachmentInput.addEventListener('change', (event) => { /* ... (logic cũ) ... */ 
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        attachmentPreview.src = e.target.result;
+                        attachmentPreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    attachmentPreview.style.display = 'none';
+                    attachmentPreview.src = '#'; 
                 }
-                reader.readAsDataURL(file);
-            } else {
-                attachmentPreview.style.display = 'none';
-                attachmentPreview.src = '#'; 
-            }
-        });
-
-        removeAttachmentBtn.addEventListener('click', async () => {
-            if (currentEditTaskId && currentTaskDataForEdit && currentTaskDataForEdit.attachmentPath) {
-                if (await showCustomConfirm("Bạn có chắc chắn muốn xóa file đính kèm này không?")) {
-                    uploadSpinner.style.display = 'inline-block';
-                    saveTaskBtn.disabled = true;
-                    try {
-                        const oldFileRef = storageRef(storage, currentTaskDataForEdit.attachmentPath);
-                        await deleteObject(oldFileRef);
-                        const tasksCollectionPath = getTasksCollectionPath();
-                        const taskRefFirestore = doc(db, tasksCollectionPath, currentEditTaskId);
-                        await updateDoc(taskRefFirestore, {
-                            attachmentURL: null, attachmentPath: null,
-                            attachmentType: null, attachmentName: null
-                        });
-                        currentAttachmentInfo.style.display = 'none';
-                        attachmentPreview.style.display = 'none';
-                        attachmentPreview.src = '#';
-                        if(currentTaskDataForEdit) { // Cập nhật local cache nếu có
-                            currentTaskDataForEdit.attachmentPath = null; 
-                            currentTaskDataForEdit.attachmentURL = null;
+            });
+            if (removeAttachmentBtn) removeAttachmentBtn.addEventListener('click', async () => { /* ... (logic cũ) ... */ 
+                 if (currentEditTaskId && currentTaskDataForEdit && currentTaskDataForEdit.attachmentPath) {
+                    if (await showCustomConfirm("Bạn có chắc chắn muốn xóa file đính kèm này không?")) {
+                        uploadSpinner.style.display = 'inline-block';
+                        saveTaskBtn.disabled = true;
+                        try {
+                            const oldFileRef = storageRef(storage, currentTaskDataForEdit.attachmentPath);
+                            await deleteObject(oldFileRef);
+                            const tasksCollectionPath = getTasksCollectionPath();
+                            const taskRefFirestore = doc(db, tasksCollectionPath, currentEditTaskId);
+                            await updateDoc(taskRefFirestore, {
+                                attachmentURL: null, attachmentPath: null,
+                                attachmentType: null, attachmentName: null
+                            });
+                            currentAttachmentInfo.style.display = 'none';
+                            attachmentPreview.style.display = 'none';
+                            attachmentPreview.src = '#';
+                            if(currentTaskDataForEdit) { 
+                                currentTaskDataForEdit.attachmentPath = null; 
+                                currentTaskDataForEdit.attachmentURL = null;
+                            }
+                            taskAttachmentInput.value = ""; 
+                        } catch (error) {
+                            alert("Lỗi khi xóa file đính kèm: " + error.message);
+                        } finally {
+                            uploadSpinner.style.display = 'none';
+                            saveTaskBtn.disabled = false;
                         }
-                        taskAttachmentInput.value = ""; // Reset file input để không upload lại file vừa xóa
-                    } catch (error) {
-                        alert("Lỗi khi xóa file đính kèm: " + error.message);
-                    } finally {
-                        uploadSpinner.style.display = 'none';
-                        saveTaskBtn.disabled = false;
                     }
                 }
-            }
-        });
+            });
+            if (saveTaskBtn) saveTaskBtn.addEventListener('click', handleSaveTask);
+            
+            [taskInput, taskDueDateInput, taskPriorityInput].forEach(inputElement => {
+                if (inputElement) inputElement.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault(); handleSaveTask();
+                    }
+                });
+            });
 
-        // ... (showLoginForm, showRegisterForm, showAppContent - không thay đổi) ...
+            columnElements.forEach(column => {
+                if (column) {
+                    column.addEventListener('dragover', (e) => e.preventDefault());
+                    column.addEventListener('dragenter', (e) => e.target.closest('.kanban-column')?.classList.add('drag-over'));
+                    column.addEventListener('dragleave', (e) => e.target.closest('.kanban-column')?.classList.remove('drag-over'));
+                    column.addEventListener('drop', handleDrop);
+                }
+            });
+
+            if(addTaskBtn) addTaskBtn.addEventListener('click', () => openTaskModal()); 
+            if(fabAddTaskBtn) fabAddTaskBtn.addEventListener('click', () => openTaskModal());
+
+            if(closeModalBtn) closeModalBtn.addEventListener('click', closeAndResetModal);
+            if(window) window.addEventListener('click', (event) => { 
+                if (event.target == taskModal) closeAndResetModal();
+            });
+            if(window) window.addEventListener('resize', resizeConfettiCanvas);
+            resizeConfettiCanvas(); // Initial call
+        }
+
+        // Gọi hàm khởi tạo sau khi DOM đã sẵn sàng
+        document.addEventListener('DOMContentLoaded', initializeDOMReferencesAndEvents);
+
+
         function showLoginForm() {
-            loginFormContainer.style.display = 'block';
-            registerFormContainer.style.display = 'none';
-            appHeader.style.display = 'none'; 
-            appContent.style.display = 'none';
-            addTaskBtnContainerDesktop.style.display = 'none'; 
-            fabAddTaskBtn.style.display = 'none'; 
+            if (loginFormContainer) loginFormContainer.style.display = 'block';
+            if (registerFormContainer) registerFormContainer.style.display = 'none';
+            if (appHeader) appHeader.style.display = 'none'; 
+            if (appContent) appContent.style.display = 'none';
+            if (addTaskBtnContainerDesktop) addTaskBtnContainerDesktop.style.display = 'none'; 
+            if (fabAddTaskBtn) fabAddTaskBtn.style.display = 'none'; 
         }
 
         function showRegisterForm() {
-            loginFormContainer.style.display = 'none';
-            registerFormContainer.style.display = 'block';
-            appHeader.style.display = 'none'; 
-            appContent.style.display = 'none';
-            addTaskBtnContainerDesktop.style.display = 'none';
-            fabAddTaskBtn.style.display = 'none';
+            if (loginFormContainer) loginFormContainer.style.display = 'none';
+            if (registerFormContainer) registerFormContainer.style.display = 'block';
+            if (appHeader) appHeader.style.display = 'none'; 
+            if (appContent) appContent.style.display = 'none';
+            if (addTaskBtnContainerDesktop) addTaskBtnContainerDesktop.style.display = 'none';
+            if (fabAddTaskBtn) fabAddTaskBtn.style.display = 'none';
         }
         
         function showAppContent(user) {
-            loginFormContainer.style.display = 'none';
-            registerFormContainer.style.display = 'none';
-            appHeader.style.display = 'flex'; 
-            appContent.style.display = 'grid'; 
+            if (loginFormContainer) loginFormContainer.style.display = 'none';
+            if (registerFormContainer) registerFormContainer.style.display = 'none';
+            if (appHeader) appHeader.style.display = 'flex'; 
+            if (appContent) appContent.style.display = 'grid'; 
             
-            addTaskBtnContainerDesktop.style.display = ''; 
-            fabAddTaskBtn.style.display = ''; 
+            if (addTaskBtnContainerDesktop) addTaskBtnContainerDesktop.style.display = ''; 
+            if (fabAddTaskBtn) fabAddTaskBtn.style.display = ''; 
 
-            logoutBtn.classList.remove('hidden'); 
+            if (logoutBtn) logoutBtn.classList.remove('hidden'); 
         }
 
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
-                showAppContent(user);
+                if (typeof showAppContent === 'function') showAppContent(user); // Kiểm tra hàm tồn tại
                 isAuthReady = true;
-                loadTasks(); 
+                if (typeof loadTasks === 'function') loadTasks();  // Kiểm tra hàm tồn tại
             } else {
                 currentUserId = null;
                 isAuthReady = false; 
@@ -570,89 +663,68 @@
                     tasksUnsubscribe(); 
                     tasksUnsubscribe = null;
                 }
-                Object.values(columns).forEach(col => col.innerHTML = ''); 
-                showLoginForm();
+                Object.values(columns).forEach(col => { if (col) col.innerHTML = ''; }); 
+                if (typeof showLoginForm === 'function') showLoginForm(); // Kiểm tra hàm tồn tại
             }
         });
-
-        loginBtn.addEventListener('click', async () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-            authError.textContent = '';
-            try { await signInWithEmailAndPassword(auth, email, password); } 
-            catch (error) { authError.textContent = "Đăng nhập thất bại: " + error.message; }
-        });
-
-        logoutBtn.addEventListener('click', async () => {
-            try { await signOut(auth); } 
-            catch (error) { console.error("Error signing out: ", error); }
-        });
         
-        showRegisterBtn.addEventListener('click', () => showRegisterForm());
-        showLoginBtn.addEventListener('click', () => showLoginForm());
-
-        registerBtn.addEventListener('click', async () => {
-            const email = registerEmailInput.value;
-            const password = registerPasswordInput.value;
-            registerAuthError.textContent = '';
-            try { await createUserWithEmailAndPassword(auth, email, password); } 
-            catch (error) { registerAuthError.textContent = "Đăng ký thất bại: " + error.message; }
-        });
-
-        const getTasksCollectionPath = () => {
-            if (!currentUserId) return null; 
-            return `artifacts/${appIdForPath}/users/${currentUserId}/kanbanTasks`;
-        };
-
         function openTaskModal(taskToEdit = null) {
-            currentTaskDataForEdit = taskToEdit ? {...taskToEdit} : null; // Clone task data
-            attachmentPreview.style.display = 'none'; 
-            attachmentPreview.src = '#';
-            taskAttachmentInput.value = ''; 
-            currentAttachmentInfo.style.display = 'none';
+            currentTaskDataForEdit = taskToEdit ? {...taskToEdit} : null; 
+            if (attachmentPreview) {
+                attachmentPreview.style.display = 'none'; 
+                attachmentPreview.src = '#';
+            }
+            if (taskAttachmentInput) taskAttachmentInput.value = ''; 
+            if (currentAttachmentInfo) currentAttachmentInfo.style.display = 'none';
 
             if (taskToEdit) {
                 currentEditTaskId = taskToEdit.id;
-                taskInput.value = taskToEdit.description;
-                taskDueDateInput.value = taskToEdit.dueDate || ""; 
-                taskPriorityInput.value = taskToEdit.priority || "medium"; 
-                modalTitle.textContent = "Sửa ghi chú";
-                saveTaskBtn.textContent = "Cập nhật";
+                if (taskInput) taskInput.value = taskToEdit.description;
+                if (taskDueDateInput) taskDueDateInput.value = taskToEdit.dueDate || ""; 
+                if (taskPriorityInput) taskPriorityInput.value = taskToEdit.priority || "medium"; 
+                if (modalTitle) modalTitle.textContent = "Sửa ghi chú";
+                if (saveTaskBtn) saveTaskBtn.textContent = "Cập nhật";
 
                 if (taskToEdit.attachmentURL) {
-                    currentAttachmentLink.href = taskToEdit.attachmentURL;
-                    currentAttachmentLink.textContent = taskToEdit.attachmentName || "Xem file";
-                    currentAttachmentInfo.style.display = 'block';
+                    if (currentAttachmentLink) {
+                        currentAttachmentLink.href = taskToEdit.attachmentURL;
+                        currentAttachmentLink.textContent = taskToEdit.attachmentName || "Xem file";
+                    }
+                    if (currentAttachmentInfo) currentAttachmentInfo.style.display = 'block';
                     if (taskToEdit.attachmentType && taskToEdit.attachmentType.startsWith('image/')) {
-                        attachmentPreview.src = taskToEdit.attachmentURL;
-                        attachmentPreview.style.display = 'block';
+                        if (attachmentPreview) {
+                            attachmentPreview.src = taskToEdit.attachmentURL;
+                            attachmentPreview.style.display = 'block';
+                        }
                     }
                 }
             } else {
                 currentEditTaskId = null;
-                taskInput.value = "";
-                taskDueDateInput.value = ""; 
-                taskPriorityInput.value = "medium"; 
-                modalTitle.textContent = "Thêm ghi chú mới";
-                saveTaskBtn.textContent = "Lưu";
+                if (taskInput) taskInput.value = "";
+                if (taskDueDateInput) taskDueDateInput.value = ""; 
+                if (taskPriorityInput) taskPriorityInput.value = "medium"; 
+                if (modalTitle) modalTitle.textContent = "Thêm ghi chú mới";
+                if (saveTaskBtn) saveTaskBtn.textContent = "Lưu";
             }
-            taskModal.style.display = 'flex';
-            taskInput.focus();
+            if (taskModal) taskModal.style.display = 'flex';
+            if (taskInput) taskInput.focus();
         }
 
         function closeAndResetModal() {
-            taskModal.style.display = 'none';
+            if (taskModal) taskModal.style.display = 'none';
             currentEditTaskId = null;
             currentTaskDataForEdit = null;
-            taskInput.value = "";
-            taskDueDateInput.value = ""; 
-            taskPriorityInput.value = "medium"; 
-            taskAttachmentInput.value = ""; 
-            attachmentPreview.style.display = 'none';
-            attachmentPreview.src = '#';
-            currentAttachmentInfo.style.display = 'none';
-            modalTitle.textContent = "Thêm ghi chú mới";
-            saveTaskBtn.textContent = "Lưu";
+            if (taskInput) taskInput.value = "";
+            if (taskDueDateInput) taskDueDateInput.value = ""; 
+            if (taskPriorityInput) taskPriorityInput.value = "medium"; 
+            if (taskAttachmentInput) taskAttachmentInput.value = ""; 
+            if (attachmentPreview) {
+                attachmentPreview.style.display = 'none';
+                attachmentPreview.src = '#';
+            }
+            if (currentAttachmentInfo) currentAttachmentInfo.style.display = 'none';
+            if (modalTitle) modalTitle.textContent = "Thêm ghi chú mới";
+            if (saveTaskBtn) saveTaskBtn.textContent = "Lưu";
         }
 
         async function handleSaveTask() {
@@ -670,8 +742,8 @@
             const tasksCollectionPath = getTasksCollectionPath();
             if (!tasksCollectionPath) return;
 
-            uploadSpinner.style.display = 'inline-block';
-            saveTaskBtn.disabled = true;
+            if (uploadSpinner) uploadSpinner.style.display = 'inline-block';
+            if (saveTaskBtn) saveTaskBtn.disabled = true;
 
             const taskDataToSave = {
                 description: description,
@@ -697,7 +769,6 @@
                     taskDataToSave.attachmentType = file.type;
                     taskDataToSave.attachmentName = file.name;
                 } else if (currentEditTaskId && currentTaskDataForEdit) {
-                    // Giữ lại thông tin file cũ nếu không có file mới và không bị xóa
                     if (currentTaskDataForEdit.attachmentURL !== undefined) taskDataToSave.attachmentURL = currentTaskDataForEdit.attachmentURL;
                     if (currentTaskDataForEdit.attachmentPath !== undefined) taskDataToSave.attachmentPath = currentTaskDataForEdit.attachmentPath;
                     if (currentTaskDataForEdit.attachmentType !== undefined) taskDataToSave.attachmentType = currentTaskDataForEdit.attachmentType;
@@ -712,35 +783,25 @@
                     taskDataToSave.status = 'todo'; 
                     taskDataToSave.userId = currentUserId; 
                     taskDataToSave.createdAt = Timestamp.now(); 
-                    taskDataToSave.order = Date.now(); // Gán order khi tạo mới
+                    taskDataToSave.order = Date.now(); 
                     await addDoc(collection(db, tasksCollectionPath), taskDataToSave);
                 }
                 closeAndResetModal();
             } catch (error) {
                 alert("Lỗi khi lưu ghi chú: " + error.message); 
             } finally {
-                uploadSpinner.style.display = 'none';
-                saveTaskBtn.disabled = false;
+                if (uploadSpinner) uploadSpinner.style.display = 'none';
+                if (saveTaskBtn) saveTaskBtn.disabled = false;
             }
         }
         
-        saveTaskBtn.addEventListener('click', handleSaveTask);
-        
-        [taskInput, taskDueDateInput, taskPriorityInput].forEach(inputElement => {
-            inputElement.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault(); handleSaveTask();
-                }
-            });
-        });
-
         async function moveTask(taskId, newStatus) {
             if (!isAuthReady || !currentUserId) return;
             const tasksCollectionPath = getTasksCollectionPath();
             if (!tasksCollectionPath) return;
             const taskRef = doc(db, tasksCollectionPath, taskId);
             try {
-                await updateDoc(taskRef, { status: newStatus, order: Date.now() }); // Cập nhật order khi chuyển cột để về cuối
+                await updateDoc(taskRef, { status: newStatus, order: Date.now() }); 
                 if (newStatus === 'done') triggerConfetti();
             } catch (error) {
                 alert("Lỗi khi di chuyển ghi chú: " + error.message);
@@ -753,15 +814,18 @@
             if (tasksUnsubscribe) tasksUnsubscribe();
             
             const tasksCollectionPath = getTasksCollectionPath();
-            if (!tasksCollectionPath) return;
+            if (!tasksCollectionPath) {
+                console.error("Cannot load tasks: tasksCollectionPath is null.");
+                return;
+            }
 
-            const q = query(collection(db, tasksCollectionPath), where("userId", "==", currentUserId), orderBy("order", "asc")); // Sắp xếp theo order
+            const q = query(collection(db, tasksCollectionPath), where("userId", "==", currentUserId), orderBy("order", "asc")); 
 
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
-                Object.values(columns).forEach(colDiv => colDiv.innerHTML = ''); 
+                Object.values(columns).forEach(colDiv => { if (colDiv) colDiv.innerHTML = ''; }); 
                 snapshot.forEach((docSnap) => renderTask({ id: docSnap.id, ...docSnap.data() }));
                 Object.entries(columns).forEach(([statusKey, columnDiv]) => {
-                    if (columnDiv.children.length === 0) { 
+                    if (columnDiv && columnDiv.children.length === 0) { 
                         const placeholder = document.createElement('div');
                         placeholder.classList.add('empty-column-placeholder');
                         const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>`;
@@ -787,7 +851,7 @@
             taskElement.setAttribute('draggable', true);
             taskElement.dataset.id = task.id;
             taskElement.dataset.status = task.status;
-            taskElement.dataset.order = task.order; // Lưu order vào data attribute
+            taskElement.dataset.order = task.order; 
 
             if (task.priority) taskElement.classList.add(`priority-${task.priority}`);
             else taskElement.classList.add('priority-medium'); 
@@ -902,7 +966,7 @@
             
             taskElement.addEventListener('dragstart', handleDragStart);
             if (columns[task.status]) columns[task.status].appendChild(taskElement);
-            else columns.todo.appendChild(taskElement); 
+            else if (columns.todo) columns.todo.appendChild(taskElement); // Fallback to todo if status is invalid
         }
         
         async function deleteTask(taskId, attachmentPath) { 
@@ -921,20 +985,12 @@
 
         let draggedItem = null;
         function handleDragStart(event) {
-            // ... (không thay đổi)
             if (!event.target.classList.contains('task')) return;
             draggedItem = event.target;
             event.dataTransfer.setData('text/plain', event.target.dataset.id);
             setTimeout(() => { if (draggedItem) draggedItem.classList.add('dragging'); }, 0);
         }
-        columnElements.forEach(column => {
-            // ... (không thay đổi dragover, dragenter, dragleave)
-            column.addEventListener('dragover', (e) => e.preventDefault());
-            column.addEventListener('dragenter', (e) => e.target.closest('.kanban-column')?.classList.add('drag-over'));
-            column.addEventListener('dragleave', (e) => e.target.closest('.kanban-column')?.classList.remove('drag-over'));
-            column.addEventListener('drop', handleDrop); // Sửa đổi handleDrop
-        });
-
+        
         async function handleDrop(event) {
             event.preventDefault();
             const targetColumnElement = event.target.closest('.kanban-column');
@@ -952,10 +1008,10 @@
             if (!tasksCollectionPath) { draggedItem = null; return; }
             const taskRef = doc(db, tasksCollectionPath, draggedItemId);
 
-            if (originalStatus === newStatus) { // Reordering within the same column
+            if (originalStatus === newStatus) { 
                 const mouseY = event.clientY;
                 let nextSibling = null;
-                const currentColumnTasksDiv = columns[newStatus]; // e.g., todo-tasks div
+                const currentColumnTasksDiv = columns[newStatus]; 
 
                 for (const child of currentColumnTasksDiv.children) {
                     if (child === draggedItem || !child.classList.contains('task')) continue;
@@ -968,61 +1024,48 @@
 
                 if (nextSibling) {
                     const orderOfNextSibling = parseFloat(nextSibling.dataset.order);
-                    let orderOfPrevSibling = 0; // Default if dropping at the very beginning
-
-                    // Find the actual previous sibling in DOM order to calculate new order
+                    let orderOfPrevSibling = 0; 
                     let tempPrev = nextSibling.previousElementSibling;
                     while(tempPrev && (tempPrev === draggedItem || !tempPrev.classList.contains('task'))) {
                         tempPrev = tempPrev.previousElementSibling;
                     }
                     if (tempPrev) {
                          orderOfPrevSibling = parseFloat(tempPrev.dataset.order);
-                    } else { // No valid previous sibling, means it's dropped at the beginning
-                        orderOfPrevSibling = orderOfNextSibling - 2000; // Ensure enough gap if it's the first
+                    } else { 
+                        orderOfPrevSibling = orderOfNextSibling - 2000; 
                     }
                     newOrder = (orderOfPrevSibling + orderOfNextSibling) / 2;
-
-                } else { // Dropped at the end of the list (or in an empty space below tasks)
+                } else { 
                     const allTasksInColumn = Array.from(currentColumnTasksDiv.children)
                                                .filter(el => el.classList.contains('task') && el !== draggedItem)
                                                .map(el => parseFloat(el.dataset.order))
                                                .sort((a,b) => a - b);
                     if (allTasksInColumn.length > 0) {
                         newOrder = allTasksInColumn[allTasksInColumn.length - 1] + 1000;
-                    } else { // Column was empty or only contained the dragged item
+                    } else { 
                         newOrder = Date.now();
                     }
                 }
                 await updateDoc(taskRef, { order: newOrder });
-
-            } else { // Moving to a different column
-                newOrder = Date.now(); // Place at the end of the new column
+            } else { 
+                newOrder = Date.now(); 
                 await updateDoc(taskRef, { status: newStatus, order: newOrder });
                 if (newStatus === 'done') triggerConfetti();
             }
             draggedItem = null; 
         }
 
-
-        if(addTaskBtn) addTaskBtn.addEventListener('click', () => openTaskModal()); 
-        if(fabAddTaskBtn) fabAddTaskBtn.addEventListener('click', () => openTaskModal());
-
-        closeModalBtn.addEventListener('click', closeAndResetModal);
-        window.addEventListener('click', (event) => { 
-            if (event.target == taskModal) closeAndResetModal();
-        });
-
         // ... (Confetti and CustomConfirm functions as before) ...
         const confettiCanvas = document.getElementById('confettiCanvas');
         const confettiCtx = confettiCanvas.getContext('2d');
         let confettiParticles = [];
         function resizeConfettiCanvas() {
-            confettiCanvas.width = window.innerWidth;
-            confettiCanvas.height = window.innerHeight;
+            if(confettiCanvas) {
+                confettiCanvas.width = window.innerWidth;
+                confettiCanvas.height = window.innerHeight;
+            }
         }
-        resizeConfettiCanvas();
-        window.addEventListener('resize', resizeConfettiCanvas);
-        const confettiColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+        
         function ConfettiParticle(x, y) {
             this.x = x; this.y = y; this.size = Math.random() * 7 + 3; 
             this.speedX = Math.random() * 6 - 3; this.speedY = Math.random() * -15 - 5; 
@@ -1035,6 +1078,7 @@
             this.angle += this.spin; this.opacity -= 0.01; 
         };
         ConfettiParticle.prototype.draw = function() {
+            if(!confettiCtx) return;
             confettiCtx.save(); confettiCtx.globalAlpha = this.opacity;
             confettiCtx.translate(this.x + this.size / 2, this.y + this.size / 2);
             confettiCtx.rotate(this.angle); confettiCtx.fillStyle = this.color;
@@ -1044,6 +1088,7 @@
         function createConfettiBurst() {
             confettiParticles = []; 
             const particleCount = 150; 
+            if(!confettiCanvas) return;
             const centerX = confettiCanvas.width / 2; const centerY = confettiCanvas.height / 2; 
             for (let i = 0; i < particleCount; i++) {
                 confettiParticles.push(new ConfettiParticle(centerX + (Math.random() - 0.5) * (confettiCanvas.width * 0.8), centerY + (Math.random() - 0.5) * (confettiCanvas.height * 0.6)));
@@ -1051,6 +1096,7 @@
         }
         let confettiAnimationId = null;
         function animateConfetti() {
+            if(!confettiCtx || !confettiCanvas) return;
             confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
             let stillAlive = false;
             for (let i = confettiParticles.length - 1; i >= 0; i--) {
