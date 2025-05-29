@@ -1233,6 +1233,18 @@
                 priorityIndicator.textContent = task.priority === 'high' ? 'Cao' : task.priority === 'medium' ? 'TB' : 'Thấp';
                 detailsContainer.appendChild(priorityIndicator);
             }
+            
+            // Hiển thị ngày giờ tạo ghi chú
+            if (task.createdAt && task.createdAt.toDate) {
+                const createdAtDate = task.createdAt.toDate();
+                const createdAtElement = document.createElement('p');
+                // Định dạng ngày giờ: dd/MM/yyyy HH:mm
+                const formattedCreatedAt = `${createdAtDate.getDate().toString().padStart(2, '0')}/${(createdAtDate.getMonth() + 1).toString().padStart(2, '0')}/${createdAtDate.getFullYear()} ${createdAtDate.getHours().toString().padStart(2, '0')}:${createdAtDate.getMinutes().toString().padStart(2, '0')}`;
+                createdAtElement.textContent = `Tạo: ${formattedCreatedAt}`;
+                createdAtElement.classList.add('text-xs', 'text-slate-500', 'mt-1', 'w-full', 'text-right'); // Căn phải cho đẹp
+                detailsContainer.appendChild(createdAtElement);
+            }
+
 
             if (detailsContainer.hasChildNodes()) taskElement.appendChild(detailsContainer);
 
