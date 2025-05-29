@@ -450,14 +450,16 @@
         let currentEditTaskId = null; 
         let currentTaskDataForEdit = null; 
         
-        // Di chuyển khai báo hàm getTasksCollectionPath lên trước khi nó được sử dụng
-        const getTasksCollectionPath = () => {
+        // Khai báo confettiColors ở phạm vi toàn cục của module, sớm hơn
+        const confettiColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+        let confettiCanvas, confettiCtx, confettiParticles = []; // Khai báo biến confetti ở đây
+
+        // Thay đổi getTasksCollectionPath thành function declaration để được hoisted
+        function getTasksCollectionPath() {
             if (!currentUserId) return null; 
             return `artifacts/${appIdForPath}/users/${currentUserId}/kanbanTasks`;
         };
 
-        // DOM Elements - Đảm bảo các getElementById được gọi sau khi HTML đã được parse
-        // Hoặc đặt script ở cuối body, hoặc dùng DOMContentLoaded
         let loginFormContainer, registerFormContainer, emailInput, passwordInput, loginBtn, showRegisterBtn,
             registerEmailInput, registerPasswordInput, registerBtn, showLoginBtn, authError, registerAuthError,
             appHeader, logoutBtn, appContent, addTaskBtnContainerDesktop, addTaskBtn, fabAddTaskBtn,
@@ -474,7 +476,6 @@
         const iconEdit = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>`;
         const iconDelete = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.56 0c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
 
-        // Hàm khởi tạo DOM references và gán sự kiện
         function initializeDOMReferencesAndEvents() {
             loginFormContainer = document.getElementById('loginFormContainer');
             registerFormContainer = document.getElementById('registerFormContainer');
@@ -518,21 +519,27 @@
             };
             columnElements = document.querySelectorAll('.kanban-column');
 
-            // Gán sự kiện sau khi DOM elements đã được tham chiếu
-            if (loginBtn) loginBtn.addEventListener('click', async () => { /* ... (logic cũ) ... */ 
+            // Khởi tạo confetti canvas và context ở đây
+            confettiCanvas = document.getElementById('confettiCanvas');
+            if (confettiCanvas) { // Kiểm tra null trước khi lấy context
+                 confettiCtx = confettiCanvas.getContext('2d');
+            }
+
+
+            if (loginBtn) loginBtn.addEventListener('click', async () => { 
                 const email = emailInput.value;
                 const password = passwordInput.value;
                 authError.textContent = '';
                 try { await signInWithEmailAndPassword(auth, email, password); } 
                 catch (error) { authError.textContent = "Đăng nhập thất bại: " + error.message; }
             });
-            if (logoutBtn) logoutBtn.addEventListener('click', async () => { /* ... (logic cũ) ... */ 
+            if (logoutBtn) logoutBtn.addEventListener('click', async () => { 
                 try { await signOut(auth); } 
                 catch (error) { console.error("Error signing out: ", error); }
             });
             if (showRegisterBtn) showRegisterBtn.addEventListener('click', () => showRegisterForm());
             if (showLoginBtn) showLoginBtn.addEventListener('click', () => showLoginForm());
-            if (registerBtn) registerBtn.addEventListener('click', async () => { /* ... (logic cũ) ... */ 
+            if (registerBtn) registerBtn.addEventListener('click', async () => { 
                 const email = registerEmailInput.value;
                 const password = registerPasswordInput.value;
                 registerAuthError.textContent = '';
@@ -540,7 +547,7 @@
                 catch (error) { registerAuthError.textContent = "Đăng ký thất bại: " + error.message; }
             });
 
-            if (taskAttachmentInput) taskAttachmentInput.addEventListener('change', (event) => { /* ... (logic cũ) ... */ 
+            if (taskAttachmentInput) taskAttachmentInput.addEventListener('change', (event) => { 
                 const file = event.target.files[0];
                 if (file && file.type.startsWith('image/')) {
                     const reader = new FileReader();
@@ -554,7 +561,7 @@
                     attachmentPreview.src = '#'; 
                 }
             });
-            if (removeAttachmentBtn) removeAttachmentBtn.addEventListener('click', async () => { /* ... (logic cũ) ... */ 
+            if (removeAttachmentBtn) removeAttachmentBtn.addEventListener('click', async () => { 
                  if (currentEditTaskId && currentTaskDataForEdit && currentTaskDataForEdit.attachmentPath) {
                     if (await showCustomConfirm("Bạn có chắc chắn muốn xóa file đính kèm này không?")) {
                         uploadSpinner.style.display = 'inline-block';
@@ -608,16 +615,13 @@
             if(fabAddTaskBtn) fabAddTaskBtn.addEventListener('click', () => openTaskModal());
 
             if(closeModalBtn) closeModalBtn.addEventListener('click', closeAndResetModal);
-            if(window) window.addEventListener('click', (event) => { 
-                if (event.target == taskModal) closeAndResetModal();
+            window.addEventListener('click', (event) => { 
+                if (taskModal && event.target == taskModal) closeAndResetModal();
             });
-            if(window) window.addEventListener('resize', resizeConfettiCanvas);
-            resizeConfettiCanvas(); // Initial call
+            window.addEventListener('resize', resizeConfettiCanvas);
+            resizeConfettiCanvas(); 
         }
-
-        // Gọi hàm khởi tạo sau khi DOM đã sẵn sàng
         document.addEventListener('DOMContentLoaded', initializeDOMReferencesAndEvents);
-
 
         function showLoginForm() {
             if (loginFormContainer) loginFormContainer.style.display = 'block';
@@ -649,13 +653,12 @@
             if (logoutBtn) logoutBtn.classList.remove('hidden'); 
         }
 
-
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
-                if (typeof showAppContent === 'function') showAppContent(user); // Kiểm tra hàm tồn tại
+                if (typeof showAppContent === 'function') showAppContent(user);
                 isAuthReady = true;
-                if (typeof loadTasks === 'function') loadTasks();  // Kiểm tra hàm tồn tại
+                if (typeof loadTasks === 'function') loadTasks(); 
             } else {
                 currentUserId = null;
                 isAuthReady = false; 
@@ -664,7 +667,7 @@
                     tasksUnsubscribe = null;
                 }
                 Object.values(columns).forEach(col => { if (col) col.innerHTML = ''; }); 
-                if (typeof showLoginForm === 'function') showLoginForm(); // Kiểm tra hàm tồn tại
+                if (typeof showLoginForm === 'function') showLoginForm();
             }
         });
         
@@ -966,7 +969,7 @@
             
             taskElement.addEventListener('dragstart', handleDragStart);
             if (columns[task.status]) columns[task.status].appendChild(taskElement);
-            else if (columns.todo) columns.todo.appendChild(taskElement); // Fallback to todo if status is invalid
+            else if (columns.todo) columns.todo.appendChild(taskElement); 
         }
         
         async function deleteTask(taskId, attachmentPath) { 
@@ -1055,10 +1058,6 @@
             draggedItem = null; 
         }
 
-        // ... (Confetti and CustomConfirm functions as before) ...
-        const confettiCanvas = document.getElementById('confettiCanvas');
-        const confettiCtx = confettiCanvas.getContext('2d');
-        let confettiParticles = [];
         function resizeConfettiCanvas() {
             if(confettiCanvas) {
                 confettiCanvas.width = window.innerWidth;
@@ -1069,7 +1068,13 @@
         function ConfettiParticle(x, y) {
             this.x = x; this.y = y; this.size = Math.random() * 7 + 3; 
             this.speedX = Math.random() * 6 - 3; this.speedY = Math.random() * -15 - 5; 
-            this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            // Sử dụng confettiColors đã được khai báo ở phạm vi module
+            if (typeof confettiColors === 'undefined' || !Array.isArray(confettiColors) || confettiColors.length === 0) {
+                console.error("confettiColors is not available or empty in ConfettiParticle!");
+                this.color = '#000000'; // Fallback color
+            } else {
+                this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            }
             this.opacity = 1; this.angle = Math.random() * Math.PI * 2;
             this.spin = Math.random() * 0.4 - 0.2; this.gravity = 0.3; this.drag = 0.98;
         }
@@ -1105,7 +1110,11 @@
                 else confettiParticles.splice(i, 1); 
             }
             if (stillAlive) confettiAnimationId = requestAnimationFrame(animateConfetti);
-            else { confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); cancelAnimationFrame(confettiAnimationId); confettiAnimationId = null; }
+            else { 
+                if(confettiCtx && confettiCanvas) confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); 
+                cancelAnimationFrame(confettiAnimationId); 
+                confettiAnimationId = null; 
+            }
         }
         function triggerConfetti() {
             if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
