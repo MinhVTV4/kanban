@@ -26,7 +26,11 @@
             touch-action: manipulation;
             border-left-width: 4px;
             border-left-color: transparent;
-            transition: border-color 0.3s ease-in-out;
+            transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+        }
+        .task-pinned {
+            background-color: #fef9c3; /* Tailwind yellow-100 for pinned tasks */
+            /* border-left-color: #facc15; */ /* Tailwind yellow-400 for pinned task border */
         }
         .task-attachment-preview {
             max-width: 100%;
@@ -109,9 +113,11 @@
         .archive-btn { background-color: #e2e8f020; color: #4a5568; border-color: #cbd5e080; }
 
         .task-actions .edit-btn { color: #3b82f6; }
-        .task-actions .delete-btn { color: #ef4444; }
+        .task-actions .pin-btn { color: #a16207; } /* Tailwind amber-700 for pin */
+        .task-actions .pin-btn.pinned { color: #f59e0b; } /* Tailwind amber-500 for pinned */
         .task-actions .edit-btn:hover { background-color: #dbeafe; }
-        .task-actions .delete-btn:hover { background-color: #fee2e2; }
+        .task-actions .pin-btn:hover { background-color: #fef3c7; } /* Tailwind amber-100 for hover */
+
 
         .task-due-date { font-size: 0.75rem; color: #4a5568; margin-top: 4px; }
         .due-date-passed { color: #e53e3e; font-weight: 500; }
@@ -228,6 +234,12 @@
             display: block; width: 100%; padding: 12px 16px; text-align: left;
             border: none; background: none; font-size: 1rem; color: #2d3748;
             border-bottom: 1px solid #edf2f7;
+        }
+        #bottomSheetOptionsList button.delete-option-sheet { /* Style for delete in sheet */
+            color: #ef4444; /* Red color for delete */
+        }
+        #bottomSheetOptionsList button.delete-option-sheet:hover {
+            background-color: #fee2e2; /* Light red hover for delete */
         }
         #bottomSheetOptionsList button:last-child { border-bottom: none; }
         #bottomSheetOptionsList button:hover { background-color: #f7fafc; }
@@ -435,7 +447,8 @@
         let isAuthReady = false;
         let tasksUnsubscribe = null;
         let currentEditTaskId = null;
-        let currentTaskDataForEdit = null;
+        let currentTaskDataForEdit = null; // Used for modal
+        let currentTaskForBottomSheet = null; // Used for bottom sheet context
 
         const confettiColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
         let confettiCanvas, confettiCtx, confettiParticles = [];
@@ -455,7 +468,7 @@
             viewArchivedBtnDesktop, viewArchivedBtnMobile, archivedTasksModal, closeArchivedModalBtn, archivedTasksList,
             moveTaskBottomSheet, bottomSheetOverlay, bottomSheetOptionsList, bottomSheetCloseBtn,
             kanbanTabsContainer;
-        let activeBottomSheetTaskId = null;
+        // let activeBottomSheetTaskId = null; // Replaced by currentTaskForBottomSheet
         let tabButtons = [];
         let columnWrappers = {};
 
@@ -468,6 +481,9 @@
         const iconEdit = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>`;
         const iconDelete = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.56 0c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
         const iconArchive = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125V6.375c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v.001c0 .621.504 1.125 1.125 1.125z" /></svg>`;
+        const iconPinOutline = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V16.5L12 14.25L7.5 16.5V3.75m9 0H7.5A2.25 2.25 0 005.25 6v10.5A2.25 2.25 0 007.5 18.75h9A2.25 2.25 0 0018.75 16.5V6A2.25 2.25 0 0016.5 3.75z" /></svg>`;
+        const iconPinSolid = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clip-rule="evenodd" /></svg>`;
+
 
         // Configuration for tab colors
         const tabColorConfigs = {
@@ -476,18 +492,18 @@
             done: { bg: 'bg-green-100', text: 'text-green-700', name: 'Hoàn thành' }
         };
         const inactiveTabConfig = {
-            bg: 'bg-slate-200', // A light background for inactive tabs
-            text: 'text-slate-600'  // Darker text for better contrast on light bg
+            bg: 'bg-slate-200',
+            text: 'text-slate-600'
         };
-        let currentActiveMobileTabStatus = 'todo'; // Initialize
+        let currentActiveMobileTabStatus = 'todo';
         const tabOrder = ['todo', 'inprogress', 'done'];
 
         // Swipe detection variables
         let touchStartX = 0;
         let touchEndX = 0;
         let touchStartY = 0;
-        const swipeThreshold = 75; // Min distance (px) for a swipe action
-        const swipeXThresholdForLock = 10; // Min X distance to consider it a horizontal gesture before locking Y scroll
+        const swipeThreshold = 75;
+        const swipeXThresholdForLock = 10;
 
 
         function initializeDOMReferencesAndEvents() {
@@ -661,7 +677,7 @@
             window.addEventListener('resize', () => {
                 resizeConfettiCanvas();
                 if (isAuthReady && window.innerWidth < 768) {
-                    setActiveTab(currentActiveMobileTabStatus); // Re-apply tab logic for current active tab
+                    setActiveTab(currentActiveMobileTabStatus);
                 } else if (isAuthReady && window.innerWidth >= 768) {
                      Object.values(columnWrappers).forEach(wrapper => {
                         if(wrapper) wrapper.classList.remove('hidden', 'active-column-mobile');
@@ -683,10 +699,9 @@
                 });
             }
 
-            // Initialize swipe listeners for appContent
             if (appContent) {
                 appContent.addEventListener('touchstart', handleTouchStart, { passive: true });
-                appContent.addEventListener('touchmove', handleTouchMove, { passive: false }); // We might preventDefault
+                appContent.addEventListener('touchmove', handleTouchMove, { passive: false });
                 appContent.addEventListener('touchend', handleTouchEnd, { passive: true });
             }
 
@@ -716,8 +731,8 @@
 
             if (logoutBtn) logoutBtn.classList.remove('hidden');
 
-            if (window.innerWidth < 768) { // md breakpoint
-                setActiveTab(currentActiveMobileTabStatus); // Use current or default 'todo'
+            if (window.innerWidth < 768) {
+                setActiveTab(currentActiveMobileTabStatus);
             } else {
                 Object.values(columnWrappers).forEach(wrapper => {
                     if(wrapper) {
@@ -730,29 +745,24 @@
 
         function setActiveTab(status) {
             if (!status || !tabButtons.length || !Object.keys(columnWrappers).length) return;
-            currentActiveMobileTabStatus = status; // Keep track of the active tab
+            currentActiveMobileTabStatus = status;
 
             tabButtons.forEach(button => {
                 const buttonStatus = button.dataset.status;
-
-                // Remove all potentially existing color classes from all configs
                 Object.values(tabColorConfigs).forEach(config => {
                     button.classList.remove(config.bg, config.text);
                 });
                 button.classList.remove(inactiveTabConfig.bg, inactiveTabConfig.text);
-                button.classList.remove('font-semibold'); // Remove bold if it was there
+                button.classList.remove('font-semibold');
 
-                if (buttonStatus === status) { // This is the active tab
+                if (buttonStatus === status) {
                     button.classList.add(tabColorConfigs[status].bg, tabColorConfigs[status].text);
-                    button.classList.add('font-semibold'); // Make active tab text bolder
-                } else { // This is an inactive tab
+                    button.classList.add('font-semibold');
+                } else {
                     button.classList.add(inactiveTabConfig.bg, inactiveTabConfig.text);
-                    // Ensure font-medium or font-normal if active was semibold
-                    // button.classList.add('font-medium'); // Assuming base is font-medium (500)
                 }
             });
 
-            // Show/hide columns on mobile
             Object.values(columnWrappers).forEach(wrapper => {
                 if (wrapper) {
                     if (wrapper.dataset.status === status) {
@@ -867,8 +877,8 @@
                 dueDate: dueDate || null,
                 priority: priority,
             };
-            
-            const isNewTask = !currentEditTaskId; // Check if it's a new task before trying to save
+
+            const isNewTask = !currentEditTaskId;
 
             try {
                 if (file) {
@@ -895,19 +905,19 @@
                 }
 
 
-                if (currentEditTaskId) { // Editing existing task
+                if (currentEditTaskId) {
                     const taskRefFirestore = doc(db, tasksCollectionPath, currentEditTaskId);
                     await updateDoc(taskRefFirestore, taskDataToSave);
-                } else { // Adding new task
-                    taskDataToSave.status = 'todo'; // New tasks always start in 'todo'
+                } else {
+                    taskDataToSave.status = 'todo';
                     taskDataToSave.userId = currentUserId;
                     taskDataToSave.createdAt = Timestamp.now();
                     taskDataToSave.order = Date.now();
+                    taskDataToSave.isPinned = false; // Default for new tasks
                     await addDoc(collection(db, tasksCollectionPath), taskDataToSave);
                 }
                 closeAndResetModal();
 
-                // If a new task was added and on mobile, switch to 'todo' tab
                 if (isNewTask && window.innerWidth < 768) {
                     setActiveTab('todo');
                 }
@@ -926,10 +936,9 @@
             if (!tasksCollectionPath) return;
             const taskRef = doc(db, tasksCollectionPath, taskId);
             try {
-                await updateDoc(taskRef, { status: newStatus, order: Date.now() });
+                await updateDoc(taskRef, { status: newStatus, order: Date.now() }); // Reset order when moving columns
                 if (newStatus === 'done') triggerConfetti();
 
-                // If on mobile, switch to the new status tab
                 if (window.innerWidth < 768) {
                     setActiveTab(newStatus);
                 }
@@ -937,6 +946,22 @@
                 alert("Lỗi khi di chuyển ghi chú: " + error.message);
             }
         }
+
+        async function togglePinTask(task) {
+            if (!isAuthReady || !currentUserId) {
+                alert("Bạn cần đăng nhập."); return;
+            }
+            const tasksCollectionPath = getTasksCollectionPath();
+            if (!tasksCollectionPath) return;
+            const taskRef = doc(db, tasksCollectionPath, task.id);
+            try {
+                await updateDoc(taskRef, { isPinned: !task.isPinned });
+                // UI will update via onSnapshot due to sort order change
+            } catch (error) {
+                alert("Lỗi khi ghim/bỏ ghim ghi chú: " + error.message);
+            }
+        }
+
 
         async function archiveTask(taskId) {
             if (!isAuthReady || !currentUserId) {
@@ -950,12 +975,10 @@
             try {
                 await updateDoc(taskRef, {
                     status: 'archived',
-                    order: Date.now()
+                    order: Date.now(),
+                    isPinned: false // Unpin when archiving
                 });
                 console.log(`Task ${taskId} archived.`);
-                 // Optionally, if on mobile and you want to switch away from 'done' if it becomes empty
-                // or to a specific tab after archiving, add setActiveTab logic here.
-                // For now, it stays on the current tab.
             } catch (error) {
                 alert("Lỗi khi lưu trữ ghi chú: " + error.message);
             }
@@ -970,13 +993,13 @@
             const taskRef = doc(db, tasksCollectionPath, taskId);
             try {
                 await updateDoc(taskRef, {
-                    status: 'todo', // Unarchived tasks go to 'todo'
-                    order: Date.now()
+                    status: 'todo',
+                    order: Date.now(),
+                    isPinned: false // Ensure unpinned when unarchiving
                 });
                 console.log(`Task ${taskId} unarchived.`);
-                loadAndShowArchivedTasks(); // Refresh the archived list
+                loadAndShowArchivedTasks();
 
-                // If on mobile, switch to 'todo' tab to see the unarchived task
                 if (window.innerWidth < 768) {
                     setActiveTab('todo');
                 }
@@ -1001,7 +1024,7 @@
                 try {
                     await deleteDoc(doc(db, tasksCollectionPath, taskId));
                     console.log("Archived task permanently deleted.");
-                    loadAndShowArchivedTasks(); // Refresh the archived list
+                    loadAndShowArchivedTasks();
                 }
                 catch (error) { alert("Lỗi khi xóa vĩnh viễn ghi chú: " + error.message); }
             }
@@ -1057,7 +1080,7 @@
                 const q = query(collection(db, tasksCollectionPath),
                                 where("userId", "==", currentUserId),
                                 where("status", "==", "archived"),
-                                orderBy("order", "desc"));
+                                orderBy("order", "desc")); // Pinned status not relevant for archived
                 const snapshot = await getDocs(q);
 
                 archivedTasksList.innerHTML = '';
@@ -1088,10 +1111,21 @@
                 return;
             }
 
+            // IMPORTANT: This query requires a composite index in Firestore.
+            // The index should be: `kanbanTasks` collection, fields:
+            // 1. `userId` ASCENDING
+            // 2. `status` ASCENDING (or specify individual statuses if using IN for status)
+            // 3. `isPinned` DESCENDING
+            // 4. `order` ASCENDING
+            // If you use `where("status", "in", ["todo", "inprogress", "done"])`,
+            // Firestore might require separate indexes for each status in the 'in' clause or a more complex setup.
+            // For simplicity, let's assume 'status' is part of the index.
+            // The console will show a link to create the index if it's missing.
             const q = query(collection(db, tasksCollectionPath),
                             where("userId", "==", currentUserId),
                             where("status", "in", ["todo", "inprogress", "done"]),
-                            orderBy("order", "asc"));
+                            orderBy("isPinned", "desc"), // Pinned tasks first
+                            orderBy("order", "asc"));     // Then by user order
 
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 let taskCounts = { todo: 0, inprogress: 0, done: 0 };
@@ -1132,19 +1166,32 @@
                 });
                  const firestoreErrorElement = document.querySelector('.firestore-error');
                 if (firestoreErrorElement) firestoreErrorElement.remove();
-            }, (error) => console.error(`Error loading tasks: `, error));
+            }, (error) => {
+                console.error(`Error loading tasks: `, error);
+                // Display error to user, possibly about missing index
+                if (columns.todo) columns.todo.innerHTML = `<p class="text-red-500 p-4">Lỗi tải ghi chú. Có thể bạn cần tạo chỉ mục trong Firestore. Kiểm tra console để biết chi tiết.</p>`;
+            });
         }
 
         function renderTask(task) {
             const taskElement = document.createElement('div');
             taskElement.classList.add('task', 'bg-white', 'p-3', 'rounded-md', 'shadow', 'hover:shadow-lg', 'transition-shadow', 'flex', 'flex-col', 'items-start');
+            if (task.isPinned) {
+                taskElement.classList.add('task-pinned');
+            }
             taskElement.setAttribute('draggable', true);
             taskElement.dataset.id = task.id;
             taskElement.dataset.status = task.status;
             taskElement.dataset.order = task.order;
+            taskElement.dataset.isPinned = task.isPinned ? 'true' : 'false';
 
-            if (task.priority) taskElement.classList.add(`priority-${task.priority}`);
-            else taskElement.classList.add('priority-medium');
+
+            if (task.priority && !task.isPinned) { // Only apply priority border if not pinned, or choose one visual cue
+                 taskElement.classList.add(`priority-${task.priority}`);
+            } else if (!task.isPinned) {
+                 taskElement.classList.add('priority-medium');
+            }
+
 
             const mainContent = document.createElement('div');
             mainContent.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'mb-1');
@@ -1164,17 +1211,13 @@
             editButton.onclick = (e) => { e.stopPropagation(); openTaskModal(task); };
             actionsContainer.appendChild(editButton);
 
-            const deleteButton = document.createElement('button');
-            deleteButton.innerHTML = iconDelete;
-            deleteButton.classList.add('delete-btn');
-            deleteButton.title = "Xóa ghi chú";
-            deleteButton.onclick = async (e) => {
-                e.stopPropagation();
-                if (await showCustomConfirm("Bạn có chắc chắn muốn xóa ghi chú này không?")) {
-                    deleteTask(task.id, task.attachmentPath);
-                }
-            };
-            actionsContainer.appendChild(deleteButton);
+            const pinButton = document.createElement('button');
+            pinButton.classList.add('pin-btn');
+            pinButton.innerHTML = task.isPinned ? iconPinSolid : iconPinOutline;
+            pinButton.title = task.isPinned ? "Bỏ ghim" : "Ghim lên đầu";
+            if(task.isPinned) pinButton.classList.add('pinned');
+            pinButton.onclick = (e) => { e.stopPropagation(); togglePinTask(task); };
+            actionsContainer.appendChild(pinButton);
 
             const moreActionsButton = document.createElement('button');
             moreActionsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" fill="currentColor" style="width:0.7em; height:0.7em; display:inline-block; vertical-align:middle;"><path d="M64 360a56 56 0 100 112 56 56 0 100-112zm0-160a56 56 0 100 112 56 56 0 100-112zM120 96a56 56 0 10-112 0 56 56 0 10112 0z"/></svg>`;
@@ -1182,7 +1225,7 @@
             moreActionsButton.title = "Thêm hành động";
             moreActionsButton.onclick = (e) => {
                 e.stopPropagation();
-                openMoveTaskBottomSheet(task.id, task.status);
+                openMoveTaskBottomSheet(task); // Pass the whole task object
             };
             actionsContainer.appendChild(moreActionsButton);
 
@@ -1233,15 +1276,13 @@
                 priorityIndicator.textContent = task.priority === 'high' ? 'Cao' : task.priority === 'medium' ? 'TB' : 'Thấp';
                 detailsContainer.appendChild(priorityIndicator);
             }
-            
-            // Hiển thị ngày giờ tạo ghi chú
+
             if (task.createdAt && task.createdAt.toDate) {
                 const createdAtDate = task.createdAt.toDate();
                 const createdAtElement = document.createElement('p');
-                // Định dạng ngày giờ: dd/MM/yyyy HH:mm
                 const formattedCreatedAt = `${createdAtDate.getDate().toString().padStart(2, '0')}/${(createdAtDate.getMonth() + 1).toString().padStart(2, '0')}/${createdAtDate.getFullYear()} ${createdAtDate.getHours().toString().padStart(2, '0')}:${createdAtDate.getMinutes().toString().padStart(2, '0')}`;
                 createdAtElement.textContent = `Tạo: ${formattedCreatedAt}`;
-                createdAtElement.classList.add('text-xs', 'text-slate-500', 'mt-1', 'w-full', 'text-right'); // Căn phải cho đẹp
+                createdAtElement.classList.add('text-xs', 'text-slate-500', 'mt-1', 'w-full', 'text-right');
                 detailsContainer.appendChild(createdAtElement);
             }
 
@@ -1269,12 +1310,7 @@
             }
 
             if (task.status === 'done') {
-                const archiveBtn = document.createElement('button');
-                archiveBtn.innerHTML = iconArchive;
-                archiveBtn.classList.add('archive-btn');
-                archiveBtn.title = "Lưu trữ ghi chú";
-                archiveBtn.onclick = (e) => { e.stopPropagation(); archiveTask(task.id); };
-                moveActionsContainer.appendChild(archiveBtn);
+                // Archive button is now in bottom sheet for 'done' tasks
             } else if (task.status !== 'done') {
                 const moveToDoneBtn = document.createElement('button');
                 moveToDoneBtn.innerHTML = iconCheck;
@@ -1322,6 +1358,7 @@
             const draggedItemId = draggedItem.dataset.id;
             const originalStatus = draggedItem.dataset.status;
             const newStatus = targetColumnWrapper.dataset.status;
+            const isPinned = draggedItem.dataset.isPinned === 'true'; // Get pinned status
 
             draggedItem.classList.remove('dragging');
             let newOrder;
@@ -1335,8 +1372,13 @@
                 let nextSibling = null;
                 const currentColumnTasksDiv = columns[newStatus];
 
-                for (const child of currentColumnTasksDiv.children) {
-                    if (child === draggedItem || !child.classList.contains('task')) continue;
+                // Filter children to only consider tasks with the same pinned status for reordering
+                const siblings = Array.from(currentColumnTasksDiv.children)
+                                    .filter(child => child.classList.contains('task') &&
+                                                     child !== draggedItem &&
+                                                     (child.dataset.isPinned === 'true') === isPinned);
+
+                for (const child of siblings) {
                     const rect = child.getBoundingClientRect();
                     if (mouseY < rect.top + rect.height / 2) {
                         nextSibling = child;
@@ -1348,32 +1390,29 @@
                     const orderOfNextSibling = parseFloat(nextSibling.dataset.order);
                     let orderOfPrevSibling = 0;
                     let tempPrev = nextSibling.previousElementSibling;
-                    while(tempPrev && (tempPrev === draggedItem || !tempPrev.classList.contains('task'))) {
+                    // Iterate to find the true previous sibling with the same pinned status
+                    while(tempPrev && (tempPrev === draggedItem || !tempPrev.classList.contains('task') || (tempPrev.dataset.isPinned === 'true') !== isPinned )) {
                         tempPrev = tempPrev.previousElementSibling;
                     }
+
                     if (tempPrev) {
                          orderOfPrevSibling = parseFloat(tempPrev.dataset.order);
-                    } else {
-                        orderOfPrevSibling = orderOfNextSibling - 2000;
+                    } else { // No previous sibling with same pinned status, place it before nextSibling
+                        orderOfPrevSibling = orderOfNextSibling - 2000; // Ensure it's before
                     }
                     newOrder = (orderOfPrevSibling + orderOfNextSibling) / 2;
-                } else {
-                    const allTasksInColumn = Array.from(currentColumnTasksDiv.children)
-                                               .filter(el => el.classList.contains('task') && el !== draggedItem)
-                                               .map(el => parseFloat(el.dataset.order))
-                                               .sort((a,b) => a - b);
-                    if (allTasksInColumn.length > 0) {
-                        newOrder = allTasksInColumn[allTasksInColumn.length - 1] + 1000;
-                    } else {
+                } else { // Dropped at the end of its pinned/unpinned group
+                    if (siblings.length > 0) {
+                        newOrder = parseFloat(siblings[siblings.length - 1].dataset.order) + 1000;
+                    } else { // Only item in its pinned/unpinned group
                         newOrder = Date.now();
                     }
                 }
                 await updateDoc(taskRef, { order: newOrder });
-            } else { // Task moved to a different column
+            } else {
                 newOrder = Date.now();
-                await updateDoc(taskRef, { status: newStatus, order: newOrder });
+                await updateDoc(taskRef, { status: newStatus, order: newOrder, isPinned: false }); // Unpin when moving to a new column for simplicity, or preserve it if desired. Let's unpin.
                 if (newStatus === 'done') triggerConfetti();
-                // If on mobile, switch to the new status tab
                 if (window.innerWidth < 768) {
                     setActiveTab(newStatus);
                 }
@@ -1381,8 +1420,8 @@
             draggedItem = null;
         }
 
-        function openMoveTaskBottomSheet(taskId, currentStatus) {
-            activeBottomSheetTaskId = taskId;
+        function openMoveTaskBottomSheet(taskData) { // taskData is the full task object
+            currentTaskForBottomSheet = taskData; // Store the task object
             if (!bottomSheetOptionsList || !moveTaskBottomSheet || !bottomSheetOverlay) return;
 
             bottomSheetOptionsList.innerHTML = '';
@@ -1393,27 +1432,47 @@
                 { id: 'done', name: 'Hoàn thành' }
             ];
 
-            if (currentStatus === 'done') {
-                destinations.push({id: 'archived', name: 'Lưu trữ'});
-            }
-
             destinations.forEach(dest => {
-                if (dest.id !== currentStatus) {
+                if (dest.id !== taskData.status) {
                     const button = document.createElement('button');
-                    button.textContent = dest.name;
+                    button.textContent = `Chuyển sang ${dest.name}`;
                     button.onclick = async () => {
-                        if (activeBottomSheetTaskId) {
-                            if (dest.id === 'archived') {
-                                await archiveTask(activeBottomSheetTaskId);
-                            } else {
-                                await moveTask(activeBottomSheetTaskId, dest.id); // moveTask will handle setActiveTab
-                            }
+                        if (currentTaskForBottomSheet) {
+                            await moveTask(currentTaskForBottomSheet.id, dest.id);
                         }
                         closeMoveTaskBottomSheet();
                     };
                     bottomSheetOptionsList.appendChild(button);
                 }
             });
+
+            // Add Archive option if current status is 'done'
+            if (taskData.status === 'done') {
+                const archiveButton = document.createElement('button');
+                archiveButton.textContent = 'Lưu trữ ghi chú';
+                archiveButton.onclick = async () => {
+                    if (currentTaskForBottomSheet) {
+                        await archiveTask(currentTaskForBottomSheet.id);
+                    }
+                    closeMoveTaskBottomSheet();
+                };
+                bottomSheetOptionsList.appendChild(archiveButton);
+            }
+
+            // Add Delete option
+            const deleteSheetButton = document.createElement('button');
+            deleteSheetButton.textContent = 'Xóa ghi chú';
+            deleteSheetButton.classList.add('delete-option-sheet'); // For styling
+            deleteSheetButton.onclick = async () => {
+                if (currentTaskForBottomSheet) {
+                    if (await showCustomConfirm("Bạn có chắc chắn muốn xóa ghi chú này không? Hành động này không thể hoàn tác.")) {
+                        await deleteTask(currentTaskForBottomSheet.id, currentTaskForBottomSheet.attachmentPath);
+                    }
+                }
+                closeMoveTaskBottomSheet();
+            };
+            bottomSheetOptionsList.appendChild(deleteSheetButton);
+
 
             moveTaskBottomSheet.classList.add('active');
             bottomSheetOverlay.classList.add('active');
@@ -1422,7 +1481,7 @@
         function closeMoveTaskBottomSheet() {
             if (moveTaskBottomSheet) moveTaskBottomSheet.classList.remove('active');
             if (bottomSheetOverlay) bottomSheetOverlay.classList.remove('active');
-            activeBottomSheetTaskId = null;
+            currentTaskForBottomSheet = null; // Clear the stored task
         }
 
         function resizeConfettiCanvas() {
@@ -1509,51 +1568,40 @@
 
         // Swipe gesture handlers
         function handleTouchStart(evt) {
-            if (window.innerWidth >= 768) return; // Only on mobile
+            if (window.innerWidth >= 768) return;
             touchStartX = evt.touches[0].clientX;
             touchStartY = evt.touches[0].clientY;
-            touchEndX = touchStartX; // Reset touchEndX for the new touch sequence
+            touchEndX = touchStartX;
         }
 
         function handleTouchMove(evt) {
             if (window.innerWidth >= 768 || !touchStartX || !touchStartY) return;
-
-            touchEndX = evt.touches[0].clientX; // Continuously update touchEndX
+            touchEndX = evt.touches[0].clientX;
             let currentY = evt.touches[0].clientY;
             let xDiff = touchStartX - touchEndX;
             let yDiff = touchStartY - currentY;
-
-            // If horizontal movement is more significant than vertical,
-            // and exceeds a small threshold, prevent default page scroll.
             if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > swipeXThresholdForLock) {
                 evt.preventDefault();
             }
         }
 
         function handleTouchEnd() {
-            if (window.innerWidth >= 768 || !touchStartX) return; // Check if touchstart was even registered for mobile
-
+            if (window.innerWidth >= 768 || !touchStartX) return;
             let swipeDistance = touchStartX - touchEndX;
-
-            // Check if the swipe distance exceeds the defined threshold
             if (Math.abs(swipeDistance) > swipeThreshold) {
                 const currentIndex = tabOrder.indexOf(currentActiveMobileTabStatus);
                 let newIndex = currentIndex;
-
-                if (swipeDistance > 0) { // Swiped left (user wants to see next tab)
+                if (swipeDistance > 0) {
                     newIndex = Math.min(currentIndex + 1, tabOrder.length - 1);
-                } else { // Swiped right (user wants to see previous tab)
+                } else {
                     newIndex = Math.max(currentIndex - 1, 0);
                 }
-
                 if (newIndex !== currentIndex) {
                     setActiveTab(tabOrder[newIndex]);
                 }
             }
-            // Reset touch coordinates
             touchStartX = 0;
             touchStartY = 0;
-            // touchEndX is implicitly reset or not used until next touchmove
         }
 
     </script>
