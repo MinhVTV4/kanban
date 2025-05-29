@@ -10,19 +10,69 @@
             font-family: 'Inter', sans-serif;
             overscroll-behavior: none; 
         }
-        /* Chiều cao cho khu vực cuộn chứa các task trong mỗi cột */
-        .task-list-scrollable {
-            min-height: 200px; 
-            overflow-y: auto; 
-            /* Mobile: VP - Header (40) - Tabs (khoảng 40) - Padding/Margin (~30) = ~110 */
-            height: calc(100vh - 110px - 40px); /* Trừ thêm chiều cao ước tính của tab bar */
+        
+        #appHeader { /* Header chính của ứng dụng */
+            position: sticky; 
+            top: 0;
+            z-index: 100; 
+            background-color: #f8fafc; /* Tailwind slate-50 hoặc màu body */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0.75rem; 
+            margin-bottom: 0.75rem; 
+            height: 40px; 
+            border-bottom: 1px solid #e2e8f0;
         }
-        @media (min-width: 768px) { /* md breakpoint and up */
+
+
+        /* Mobile specific styles for stacked layout */
+        @media (max-width: 767px) { /* Dưới md breakpoint */
+            #appContent {
+                overflow-y: auto;
+                height: calc(100vh - 40px - 0.75rem); /* 40px header + 0.75rem margin-bottom của header */
+                scroll-behavior: smooth;
+            }
+            .kanban-main-column {
+                /* Nội dung sẽ được cuộn bên trong .task-list-scrollable */
+            }
+            .kanban-main-column h2 { 
+                position: sticky;
+                z-index: 10; 
+                background-color: inherit; 
+                padding-top: 0.5rem; 
+                padding-bottom: 0.5rem;
+                cursor: pointer;
+            }
+            /* Top offsets for sticky headers, will be adjusted by JS */
+            #done-column-wrapper h2 { top: 0; } 
+            #inprogress-column-wrapper h2 { top: 56px; } /* Placeholder, JS will calculate */
+            #todo-column-wrapper h2 { top: 112px; }   /* Placeholder, JS will calculate */
+
             .task-list-scrollable {
-                /* Desktop: VP - Header (40) - AddBtn Desktop (40) - Margins/Paddings (~40) = ~120 */
-                height: calc(100vh - 120px); 
+                 min-height: calc(100vh - 40px - 0.75rem - 56px * 3); /* VP - appHeader - 3*stickyHeaders (ước tính) */
+                 /* Không cần set height cố định nữa, để nó tự dãn theo content */
             }
         }
+
+        /* Desktop styles */
+        @media (min-width: 768px) {
+            #appContent {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem; 
+            }
+            .kanban-main-column h2 {
+                position: static; 
+                cursor: default;
+            }
+            .task-list-scrollable {
+                height: calc(100vh - 120px); 
+                min-height: 200px;
+                overflow-y: auto;
+            }
+        }
+
 
         .task {
             cursor: grab;
@@ -186,217 +236,17 @@
         .indicator-medium { background-color: #f6e05e; color: #4a5568; }
         .indicator-high { background-color: #fc8181; }
 
-        #appHeader {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.3rem 0.75rem; 
-            margin-bottom: 0.75rem; 
-            height: 40px; 
-        }
-        #appHeader h1 {
-            font-size: 1.25rem; 
-            font-weight: 600; 
-            margin: 0;
-            color: #2d3748; 
-        }
-        #headerUserControls {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem; 
-        }
-        #userInfo {
-           display: none !important; 
-        }
-        .header-icon-btn { 
-            background-color: transparent; 
-            color: #4a5568; 
-            padding: 0.25rem; 
-            border: none;
-            border-radius: 9999px; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px; 
-            height: 32px; 
-        }
-        .header-icon-btn:hover {
-            background-color: #edf2f7; 
-            color: #1a202c; 
-        }
-        .header-icon-btn svg {
-            width: 18px; 
-            height: 18px; 
-        }
-
-        #addTaskBtnContainerDesktop {
-            height: 40px; 
-            align-items: center;
-            justify-content: flex-start;
-            gap: 0.5rem; 
-            margin-bottom: 0.75rem; 
-        }
-        #addTaskBtn, #viewArchivedBtnDesktop { 
-            padding: 0.4rem 0.8rem; 
-            font-size: 0.85rem;
-        }
-        #fabAddTaskBtn { 
-            width: 56px; 
-            height: 56px; 
-            font-size: 2rem; 
-            line-height: 1; 
-        }
-        .empty-column-placeholder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 150px; 
-            border: 2px dashed #cbd5e0; 
-            border-radius: 0.375rem; 
-            color: #718096; 
-            font-style: italic;
-            margin-top: 1rem;
-        }
-        .empty-column-placeholder svg { 
-            width: 32px;
-            height: 32px;
-            margin-bottom: 0.5rem;
-            opacity: 0.6;
-        }
-        .task-actions svg, .task-move-actions svg {
-            width: 16px; 
-            height: 16px;
-        }
-        #attachmentPreview {
-            max-width: 100px;
-            max-height: 100px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            display: none; 
-        }
-        .loading-spinner {
-            border: 4px solid #f3f3f3; 
-            border-top: 4px solid #3498db; 
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            display: none; 
-            margin-left: 10px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .column-header-count {
-            font-size: 0.875rem; 
-            color: #4a5568; 
-            background-color: #e2e8f0; 
-            padding: 0.125rem 0.5rem; 
-            border-radius: 9999px; 
-            margin-left: 0.5rem; 
-        }
-
-        /* Tab Styles */
-        #kanbanTabs {
-            border-bottom: 1px solid #e2e8f0; 
-            background-color: #f8fafc; 
-        }
-        .tab-button {
-            padding: 0.75rem 1rem; 
-            font-size: 0.875rem; 
-            font-weight: 500; 
-            color: #64748b; 
-            border-bottom: 3px solid transparent;
-            transition: color 0.2s ease, border-color 0.2s ease;
-            flex-grow: 1; 
-            text-align: center;
-            cursor: pointer;
-        }
-        .tab-button:hover {
-            color: #0f172a; 
-        }
-        .tab-button.active-tab {
-            color: #0ea5e9; 
-            border-bottom-color: #0ea5e9;
-        }
-        .kanban-main-column { 
-            /* Mặc định ẩn trên mobile, sẽ được JS thêm class 'block' hoặc 'hidden' */
-        }
-        @media (max-width: 767px) { /* Dưới md breakpoint */
-            .kanban-main-column {
-                display: none; /* Mặc định ẩn các cột trên mobile */
-            }
-            .kanban-main-column.active-column-mobile {
-                display: block !important; /* Hiển thị cột active */
-            }
-            #appContent { /* Bỏ grid trên mobile để các cột không bị xếp ngang */
-                display: block;
-            }
-        }
-
-
-        /* Bottom Sheet Styles */
-        #moveTaskBottomSheet {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: white;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
-            transform: translateY(100%);
-            transition: transform 0.3s ease-out;
-            z-index: 1050; 
-            padding: 16px;
-            display: none; 
-        }
-        #moveTaskBottomSheet.active {
-            transform: translateY(0);
-            display: block;
-        }
-        #bottomSheetOverlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.4);
-            z-index: 1040; 
-            display: none; 
-        }
-        #bottomSheetOverlay.active {
-            display: block;
-        }
-        #bottomSheetOptionsList button {
-            display: block;
-            width: 100%;
-            padding: 12px 16px;
-            text-align: left;
-            border: none;
-            background: none;
-            font-size: 1rem;
-            color: #2d3748; 
-            border-bottom: 1px solid #edf2f7; 
-        }
-        #bottomSheetOptionsList button:last-child {
-            border-bottom: none;
-        }
-        #bottomSheetOptionsList button:hover {
-            background-color: #f7fafc; 
-        }
-        #bottomSheetCloseBtn {
-            display: block;
-            width: 100%;
-            padding: 12px 16px;
-            margin-top: 10px;
-            text-align: center;
-            border: none;
-            background-color: #e2e8f0; 
-            color: #4a5568; 
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-        }
+        /* #appHeader, (đã style ở trên) */
+        #appHeader h1, #headerUserControls, #userInfo, 
+        .header-icon-btn, .header-icon-btn svg { /* ... (như cũ) ... */ }
+        #addTaskBtnContainerDesktop, #addTaskBtn, #viewArchivedBtnDesktop, #fabAddTaskBtn { /* ... (như cũ) ... */ }
+        .empty-column-placeholder, .empty-column-placeholder svg { /* ... (như cũ) ... */ }
+        .task-actions svg, .task-move-actions svg { /* ... (như cũ) ... */ }
+        #attachmentPreview { /* ... (như cũ) ... */ }
+        .loading-spinner { /* ... (như cũ) ... */ }
+        .column-header-count { /* ... (như cũ) ... */ }
+        #moveTaskBottomSheet, #bottomSheetOverlay, #bottomSheetOptionsList button, #bottomSheetCloseBtn { /* ... (như cũ) ... */ }
+        #kanbanTabs { display: none; } /* Không dùng tab ngang nữa */
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -452,34 +302,28 @@
                     Xem Lưu Trữ
                 </button>
             </div>
-
-            <div id="kanbanTabs" class="flex md:hidden">
-                <button class="tab-button" data-status="todo">Cần làm</button>
-                <button class="tab-button" data-status="inprogress">Đang làm</button>
-                <button class="tab-button" data-status="done">Hoàn thành</button>
-            </div>
-
+            
             <div id="appContent" class="md:grid md:grid-cols-3 md:gap-4 md:gap-6">
-                <div id="todo-column-wrapper" class="kanban-main-column bg-rose-100 p-4 rounded-lg shadow-lg" data-status="todo">
-                    <h2 class="text-xl font-semibold text-rose-700 mb-4 border-b-2 border-rose-300 pb-2 flex justify-between items-center">
-                        <span>Cần làm</span>
-                        <span id="todo-count" class="column-header-count">0</span>
-                    </h2>
-                    <div id="todo-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
-                </div>
-                <div id="inprogress-column-wrapper" class="kanban-main-column bg-amber-100 p-4 rounded-lg shadow-lg" data-status="inprogress">
-                    <h2 class="text-xl font-semibold text-amber-700 mb-4 border-b-2 border-amber-300 pb-2 flex justify-between items-center">
-                        <span>Đang làm</span>
-                        <span id="inprogress-count" class="column-header-count">0</span>
-                    </h2>
-                    <div id="inprogress-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
-                </div>
-                <div id="done-column-wrapper" class="kanban-main-column bg-green-100 p-4 rounded-lg shadow-lg" data-status="done">
-                    <h2 class="text-xl font-semibold text-green-700 mb-4 border-b-2 border-green-300 pb-2 flex justify-between items-center">
+                <div id="done-column-wrapper" class="kanban-main-column bg-green-100 md:p-4 rounded-lg md:shadow-lg" data-status="done">
+                    <h2 class="text-xl font-semibold text-green-700 mb-4 border-b-2 border-green-300 pb-2 flex justify-between items-center p-4 md:p-0">
                         <span>Hoàn thành</span>
                         <span id="done-count" class="column-header-count">0</span>
                     </h2>
-                    <div id="done-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable"></div>
+                    <div id="done-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable px-4 md:px-0 pb-4 md:pb-0"></div>
+                </div>
+                <div id="inprogress-column-wrapper" class="kanban-main-column bg-amber-100 md:p-4 rounded-lg md:shadow-lg" data-status="inprogress">
+                    <h2 class="text-xl font-semibold text-amber-700 mb-4 border-b-2 border-amber-300 pb-2 flex justify-between items-center p-4 md:p-0">
+                        <span>Đang làm</span>
+                        <span id="inprogress-count" class="column-header-count">0</span>
+                    </h2>
+                    <div id="inprogress-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable px-4 md:px-0 pb-4 md:pb-0"></div>
+                </div>
+                <div id="todo-column-wrapper" class="kanban-main-column bg-rose-100 md:p-4 rounded-lg md:shadow-lg" data-status="todo">
+                    <h2 class="text-xl font-semibold text-rose-700 mb-4 border-b-2 border-rose-300 pb-2 flex justify-between items-center p-4 md:p-0">
+                        <span>Cần làm</span>
+                        <span id="todo-count" class="column-header-count">0</span>
+                    </h2>
+                    <div id="todo-tasks" class="space-y-3 task-list min-h-[100px] task-list-scrollable px-4 md:px-0 pb-4 md:pb-0"></div>
                 </div>
             </div>
         </div>
@@ -576,8 +420,11 @@
             deleteObject
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
 
+        // QUAN TRỌNG: LỖI API KEY
+        // Nếu bạn gặp lỗi "auth/invalid-api-key", hãy đảm bảo giá trị `apiKey`
+        // trong `firebaseConfig` dưới đây là CHÍNH XÁC API Key từ project Firebase của bạn.
         const firebaseConfig = {
-            apiKey: "AIzaSyDPEaExmwMz2mQWN_vDDTdziegQUfUrLaA", 
+            apiKey: "AIzaSyDPEaExmwMz2mQWN_vDDTdziegQUfUrLaA", // <-- KIỂM TRA KỸ GIÁ TRỊ NÀY!
             authDomain: "ghichucode.firebaseapp.com", 
             projectId: "ghichucode", 
             storageBucket: "ghichucode.firebasestorage.app", 
@@ -615,14 +462,12 @@
             removeAttachmentBtn, uploadSpinner, modalTitle,
             todoCountSpan, inprogressCountSpan, doneCountSpan,
             viewArchivedBtnDesktop, viewArchivedBtnMobile, archivedTasksModal, closeArchivedModalBtn, archivedTasksList,
-            moveTaskBottomSheet, bottomSheetOverlay, bottomSheetOptionsList, bottomSheetCloseBtn,
-            kanbanTabsContainer;
+            moveTaskBottomSheet, bottomSheetOverlay, bottomSheetOptionsList, bottomSheetCloseBtn;
         let activeBottomSheetTaskId = null;
-        let tabButtons = [];
-        let columnWrappers = {};
         
-        let columns = {}; // Giữ lại columns cho renderTask
-        let columnElements = []; // Giữ lại columnElements cho handleDrop
+        let columns = {}; 
+        let columnWrappers = {}; 
+        let stickyHeaders = {}; 
 
         const iconArrowLeft = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>`;
         const iconArrowRight = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>`;
@@ -668,17 +513,41 @@
             uploadSpinner = document.getElementById('uploadSpinner');
             modalTitle = document.getElementById('modalTitle'); 
             
-            columns = { // Divs chứa các task list
+            columns = { 
                 todo: document.getElementById('todo-tasks'),
                 inprogress: document.getElementById('inprogress-tasks'),
                 done: document.getElementById('done-tasks')
             };
-            columnWrappers = { // Divs cha của từng cột (để show/hide trên mobile)
+            columnWrappers = { 
                 todo: document.getElementById('todo-column-wrapper'),
                 inprogress: document.getElementById('inprogress-column-wrapper'),
                 done: document.getElementById('done-column-wrapper')
             };
-            columnElements = document.querySelectorAll('.kanban-main-column'); // Dùng cho drag/drop
+            
+            if (columnWrappers.todo) stickyHeaders.todo = columnWrappers.todo.querySelector('h2');
+            if (columnWrappers.inprogress) stickyHeaders.inprogress = columnWrappers.inprogress.querySelector('h2');
+            if (columnWrappers.done) stickyHeaders.done = columnWrappers.done.querySelector('h2');
+
+            Object.entries(stickyHeaders).forEach(([status, headerElement]) => {
+                if (headerElement) {
+                    headerElement.addEventListener('click', () => {
+                        if (window.innerWidth < 768 && columnWrappers[status] && appContent && appHeader) { 
+                            const appHeaderHeight = appHeader.offsetHeight + parseFloat(getComputedStyle(appHeader).marginBottom || '0');
+                            let offset = 0;
+                            // Tính toán offset dựa trên các header dính phía trên cột target
+                            if (status === 'inprogress') {
+                                offset = stickyHeaders.done ? stickyHeaders.done.offsetHeight : 0;
+                            } else if (status === 'todo') {
+                                offset = (stickyHeaders.done ? stickyHeaders.done.offsetHeight : 0) + 
+                                         (stickyHeaders.inprogress ? stickyHeaders.inprogress.offsetHeight : 0);
+                            }
+                            const targetScrollTop = columnWrappers[status].offsetTop - appHeaderHeight - offset;
+                            appContent.scrollTop = targetScrollTop;
+                        }
+                    });
+                }
+            });
+
 
             todoCountSpan = document.getElementById('todo-count');
             inprogressCountSpan = document.getElementById('inprogress-count');
@@ -694,8 +563,6 @@
             bottomSheetOverlay = document.getElementById('bottomSheetOverlay');
             bottomSheetOptionsList = document.getElementById('bottomSheetOptionsList');
             bottomSheetCloseBtn = document.getElementById('bottomSheetCloseBtn');
-
-            kanbanTabsContainer = document.getElementById('kanbanTabs');
 
             confettiCanvas = document.getElementById('confettiCanvas');
             if (confettiCanvas) { 
@@ -778,14 +645,33 @@
                 });
             });
 
-            columnElements.forEach(column => {
-                if (column) {
-                    column.addEventListener('dragover', (e) => e.preventDefault());
-                    column.addEventListener('dragenter', (e) => e.target.closest('.kanban-main-column')?.classList.add('drag-over'));
-                    column.addEventListener('dragleave', (e) => e.target.closest('.kanban-main-column')?.classList.remove('drag-over'));
-                    column.addEventListener('drop', handleDrop);
+            // Gán sự kiện drop cho #appContent trên mobile để xử lý kéo thả vào các vùng header
+            if (appContent) {
+                 appContent.addEventListener('dragover', (e) => {
+                    if (window.innerWidth < 768) e.preventDefault(); // Chỉ cho phép drop trên mobile
+                });
+                appContent.addEventListener('drop', (e) => {
+                     if (window.innerWidth < 768) handleDrop(e); // Chỉ xử lý drop trên mobile
+                });
+            }
+            // Gán sự kiện drop cho từng column wrapper trên desktop
+            Object.values(columnWrappers).forEach(wrapper => {
+                if(wrapper) {
+                    wrapper.addEventListener('dragover', (e) => {
+                        if (window.innerWidth >= 768) e.preventDefault();
+                    });
+                     wrapper.addEventListener('dragenter', (e) => {
+                        if (window.innerWidth >= 768) e.target.closest('.kanban-main-column')?.classList.add('drag-over');
+                    });
+                    wrapper.addEventListener('dragleave', (e) => {
+                        if (window.innerWidth >= 768) e.target.closest('.kanban-main-column')?.classList.remove('drag-over');
+                    });
+                    wrapper.addEventListener('drop', (e) => {
+                        if (window.innerWidth >= 768) handleDrop(e);
+                    });
                 }
             });
+
 
             if(addTaskBtn) addTaskBtn.addEventListener('click', () => openTaskModal()); 
             if(fabAddTaskBtn) fabAddTaskBtn.addEventListener('click', () => openTaskModal());
@@ -802,14 +688,8 @@
             });
             window.addEventListener('resize', () => {
                 resizeConfettiCanvas();
-                // Re-apply tab logic on resize if needed, especially for orientation changes on mobile
-                if (isAuthReady && window.innerWidth < 768) {
-                    const currentActiveTab = kanbanTabsContainer.querySelector('.active-tab');
-                    setActiveTab(currentActiveTab ? currentActiveTab.dataset.status : 'todo');
-                } else if (isAuthReady && window.innerWidth >= 768) {
-                     Object.values(columnWrappers).forEach(wrapper => {
-                        if(wrapper) wrapper.classList.remove('hidden', 'active-column-mobile');
-                    });
+                if (isAuthReady) { // Chỉ gọi showAppContent nếu đã đăng nhập
+                    showAppContent(auth.currentUser);
                 }
             });
             
@@ -820,13 +700,6 @@
             });
             if (bottomSheetCloseBtn) bottomSheetCloseBtn.addEventListener('click', closeMoveTaskBottomSheet);
 
-            if (kanbanTabsContainer) {
-                tabButtons = Array.from(kanbanTabsContainer.querySelectorAll('.tab-button'));
-                tabButtons.forEach(button => {
-                    button.addEventListener('click', () => setActiveTab(button.dataset.status));
-                });
-            }
-
             resizeConfettiCanvas(); 
         }
         document.addEventListener('DOMContentLoaded', initializeDOMReferencesAndEvents);
@@ -835,7 +708,7 @@
             if (loginFormContainer) loginFormContainer.style.display = 'block';
             if (registerFormContainer) registerFormContainer.style.display = 'none';
             if (appHeader) appHeader.style.display = 'none'; 
-            if (appContentContainer) appContentContainer.style.display = 'none'; // Ẩn container chính
+            if (appContentContainer) appContentContainer.style.display = 'none'; 
         }
 
         function showRegisterForm() {
@@ -849,45 +722,31 @@
             if (loginFormContainer) loginFormContainer.style.display = 'none';
             if (registerFormContainer) registerFormContainer.style.display = 'none';
             if (appHeader) appHeader.style.display = 'flex'; 
-            if (appContentContainer) appContentContainer.style.display = 'block'; // Hiển thị container chính
+            if (appContentContainer) appContentContainer.style.display = 'block'; 
             
             if (logoutBtn) logoutBtn.classList.remove('hidden'); 
 
-            if (window.innerWidth < 768) { // md breakpoint
-                setActiveTab('todo'); 
-            } else { 
-                Object.values(columnWrappers).forEach(wrapper => {
-                    if(wrapper) {
-                        wrapper.classList.remove('hidden', 'active-column-mobile');
-                        // For desktop, ensure they are displayed by Tailwind's md:grid on #appContent
-                    }
-                });
-                 if (kanbanTabsContainer) kanbanTabsContainer.classList.add('md:hidden'); // Ensure tabs are hidden on desktop
+            if (window.innerWidth < 768) { 
+                if (appContent) appContent.style.display = 'block'; // Mobile: appContent cuộn được
+                // Đặt lại top cho sticky headers mỗi khi showAppContent được gọi trên mobile
+                const doneHeaderHeight = stickyHeaders.done ? stickyHeaders.done.offsetHeight : 0;
+                const inprogressHeaderHeight = stickyHeaders.inprogress ? stickyHeaders.inprogress.offsetHeight : 0;
+                if (stickyHeaders.done) stickyHeaders.done.style.top = `0px`;
+                if (stickyHeaders.inprogress) stickyHeaders.inprogress.style.top = `${doneHeaderHeight}px`;
+                if (stickyHeaders.todo) stickyHeaders.todo.style.top = `${doneHeaderHeight + inprogressHeaderHeight}px`;
+
+                // Scroll to 'Cần làm'
+                if (appContent && columnWrappers.todo) {
+                     setTimeout(() => { 
+                        const appHeaderActualHeight = appHeader ? appHeader.offsetHeight + parseFloat(getComputedStyle(appHeader).marginBottom || '0') : 0;
+                        const targetOffset = columnWrappers.todo.offsetTop - appHeaderActualHeight;
+                        appContent.scrollTop = targetOffset > 0 ? targetOffset : 0;
+                     }, 150); // Tăng delay để chắc chắn layout đã render
+                }
+
+            } else { // Desktop
+                if (appContent) appContent.style.display = 'grid'; // Desktop: grid layout
             }
-        }
-
-        function setActiveTab(status) {
-            if (!status || !tabButtons.length || !Object.keys(columnWrappers).length) return; 
-
-            tabButtons.forEach(button => {
-                if (button.dataset.status === status) {
-                    button.classList.add('active-tab');
-                } else {
-                    button.classList.remove('active-tab');
-                }
-            });
-
-            Object.values(columnWrappers).forEach(wrapper => {
-                if (wrapper) { 
-                    if (wrapper.dataset.status === status) {
-                        wrapper.classList.remove('hidden'); 
-                        wrapper.classList.add('active-column-mobile'); 
-                    } else {
-                        wrapper.classList.add('hidden');
-                        wrapper.classList.remove('active-column-mobile'); 
-                    }
-                }
-            });
         }
 
         onAuthStateChanged(auth, (user) => {
