@@ -30,21 +30,21 @@
         }
         .task-attachment-preview {
             max-width: 100%;
-            max-height: 100px; /* Giới hạn chiều cao ảnh preview */
+            max-height: 100px; 
             object-fit: cover;
-            border-radius: 0.25rem; /* rounded-sm */
+            border-radius: 0.25rem; 
             margin-top: 8px;
-            border: 1px solid #e2e8f0; /* Tailwind gray-200 */
+            border: 1px solid #e2e8f0; 
         }
         .task-attachment-link {
             display: inline-block;
             margin-top: 8px;
             font-size: 0.8rem;
-            color: #2b6cb0; /* Tailwind blue-600 */
+            color: #2b6cb0; 
             text-decoration: underline;
         }
         .task-attachment-link:hover {
-            color: #2c5282; /* Tailwind blue-800 */
+            color: #2c5282; 
         }
 
         .task:active {
@@ -272,16 +272,16 @@
             max-height: 100px;
             margin-top: 5px;
             border: 1px solid #ccc;
-            display: none; /* Hidden by default */
+            display: none; 
         }
         .loading-spinner {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #3498db; /* Blue */
+            border: 4px solid #f3f3f3; 
+            border-top: 4px solid #3498db; 
             border-radius: 50%;
             width: 20px;
             height: 20px;
             animation: spin 1s linear infinite;
-            display: none; /* Hidden by default */
+            display: none; 
             margin-left: 10px;
         }
         @keyframes spin {
@@ -307,30 +307,10 @@
         </header>
 
         <div id="loginFormContainer" class="auth-form-container">
-            <h2 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Đăng nhập</h2>
-            <input type="email" id="emailInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Email">
-            <input type="password" id="passwordInput" class="w-full p-3 border border-slate-300 rounded-lg mb-6 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Mật khẩu">
-            <button id="loginBtn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out mb-3">
-                Đăng nhập
-            </button>
-            <button id="showRegisterBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
-                Đăng ký
-            </button>
-            <p id="authError" class="text-red-500 text-sm mt-3 text-center"></p>
-        </div>
+            </div>
         
         <div id="registerFormContainer" class="auth-form-container" style="display: none;">
-            <h2 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Đăng ký</h2>
-            <input type="email" id="registerEmailInput" class="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Email">
-            <input type="password" id="registerPasswordInput" class="w-full p-3 border border-slate-300 rounded-lg mb-6 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Mật khẩu (tối thiểu 6 ký tự)">
-            <button id="registerBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out mb-3">
-                Đăng ký
-            </button>
-            <button id="showLoginBtn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
-                Quay lại Đăng nhập
-            </button>
-            <p id="registerAuthError" class="text-red-500 text-sm mt-3 text-center"></p>
-        </div>
+            </div>
 
         <div id="addTaskBtnContainerDesktop" class="hidden md:flex"> 
             <button id="addTaskBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out">
@@ -414,13 +394,13 @@
             onSnapshot, 
             query, 
             where,
+            orderBy, // Thêm orderBy
             Timestamp,
             setLogLevel
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js"; 
-        // Thêm import cho Firebase Storage
         import { 
             getStorage, 
-            ref as storageRef, // Đổi tên ref để tránh xung đột với ref của Firestore
+            ref as storageRef, 
             uploadBytes, 
             getDownloadURL,
             deleteObject
@@ -430,7 +410,7 @@
             apiKey: "AIzaSyDPEaExmwMz2mQWN_vDDTdziegQUfUrLaA", 
             authDomain: "ghichucode.firebaseapp.com", 
             projectId: "ghichucode", 
-            storageBucket: "ghichucode.firebasestorage.app", // Đảm bảo đúng bucket
+            storageBucket: "ghichucode.firebasestorage.app", 
             messagingSenderId: "105071769282", 
             appId: "1:105071769282:web:9af172be73deb5267eed5b" 
         };
@@ -440,15 +420,16 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app); // Khởi tạo Firebase Storage
+        const storage = getStorage(app); 
         setLogLevel('debug'); 
 
         let currentUserId = null;
         let isAuthReady = false; 
         let tasksUnsubscribe = null; 
         let currentEditTaskId = null; 
-        let currentTaskDataForEdit = null; // Lưu trữ dữ liệu task hiện tại khi sửa
+        let currentTaskDataForEdit = null; 
 
+        // ... (DOM references and SVG icons as before) ...
         const loginFormContainer = document.getElementById('loginFormContainer');
         const registerFormContainer = document.getElementById('registerFormContainer');
         const emailInput = document.getElementById('emailInput');
@@ -496,6 +477,7 @@
         const iconEdit = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>`;
         const iconDelete = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.56 0c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
 
+
         taskAttachmentInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file && file.type.startsWith('image/')) {
@@ -507,7 +489,7 @@
                 reader.readAsDataURL(file);
             } else {
                 attachmentPreview.style.display = 'none';
-                attachmentPreview.src = '#'; // Reset src
+                attachmentPreview.src = '#'; 
             }
         });
 
@@ -519,24 +501,21 @@
                     try {
                         const oldFileRef = storageRef(storage, currentTaskDataForEdit.attachmentPath);
                         await deleteObject(oldFileRef);
-                        console.log("Old attachment deleted from Storage.");
-
                         const tasksCollectionPath = getTasksCollectionPath();
                         const taskRefFirestore = doc(db, tasksCollectionPath, currentEditTaskId);
                         await updateDoc(taskRefFirestore, {
-                            attachmentURL: null,
-                            attachmentPath: null,
-                            attachmentType: null,
-                            attachmentName: null
+                            attachmentURL: null, attachmentPath: null,
+                            attachmentType: null, attachmentName: null
                         });
-                        console.log("Attachment info removed from Firestore.");
                         currentAttachmentInfo.style.display = 'none';
                         attachmentPreview.style.display = 'none';
                         attachmentPreview.src = '#';
-                        currentTaskDataForEdit.attachmentPath = null; // Update local cache
-                        currentTaskDataForEdit.attachmentURL = null;
+                        if(currentTaskDataForEdit) { // Cập nhật local cache nếu có
+                            currentTaskDataForEdit.attachmentPath = null; 
+                            currentTaskDataForEdit.attachmentURL = null;
+                        }
+                        taskAttachmentInput.value = ""; // Reset file input để không upload lại file vừa xóa
                     } catch (error) {
-                        console.error("Error removing attachment: ", error);
                         alert("Lỗi khi xóa file đính kèm: " + error.message);
                     } finally {
                         uploadSpinner.style.display = 'none';
@@ -546,7 +525,7 @@
             }
         });
 
-
+        // ... (showLoginForm, showRegisterForm, showAppContent - không thay đổi) ...
         function showLoginForm() {
             loginFormContainer.style.display = 'block';
             registerFormContainer.style.display = 'none';
@@ -576,6 +555,7 @@
 
             logoutBtn.classList.remove('hidden'); 
         }
+
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -625,12 +605,11 @@
         };
 
         function openTaskModal(taskToEdit = null) {
-            currentTaskDataForEdit = taskToEdit; // Lưu dữ liệu task hiện tại
-            attachmentPreview.style.display = 'none'; // Ẩn preview cũ
+            currentTaskDataForEdit = taskToEdit ? {...taskToEdit} : null; // Clone task data
+            attachmentPreview.style.display = 'none'; 
             attachmentPreview.src = '#';
-            taskAttachmentInput.value = ''; // Reset file input
+            taskAttachmentInput.value = ''; 
             currentAttachmentInfo.style.display = 'none';
-
 
             if (taskToEdit) {
                 currentEditTaskId = taskToEdit.id;
@@ -649,7 +628,6 @@
                         attachmentPreview.style.display = 'block';
                     }
                 }
-
             } else {
                 currentEditTaskId = null;
                 taskInput.value = "";
@@ -669,7 +647,7 @@
             taskInput.value = "";
             taskDueDateInput.value = ""; 
             taskPriorityInput.value = "medium"; 
-            taskAttachmentInput.value = ""; // Quan trọng: reset file input
+            taskAttachmentInput.value = ""; 
             attachmentPreview.style.display = 'none';
             attachmentPreview.src = '#';
             currentAttachmentInfo.style.display = 'none';
@@ -684,13 +662,10 @@
             const file = taskAttachmentInput.files[0];
 
             if (!description.trim()) {
-                alert("Nội dung ghi chú không được để trống.");
-                return;
+                alert("Nội dung ghi chú không được để trống."); return;
             }
-
             if (!isAuthReady || !currentUserId) {
-                alert("Bạn cần đăng nhập để thực hiện hành động này."); 
-                return;
+                alert("Bạn cần đăng nhập."); return;
             }
             const tasksCollectionPath = getTasksCollectionPath();
             if (!tasksCollectionPath) return;
@@ -698,62 +673,50 @@
             uploadSpinner.style.display = 'inline-block';
             saveTaskBtn.disabled = true;
 
-            const taskData = {
+            const taskDataToSave = {
                 description: description,
                 dueDate: dueDate || null, 
                 priority: priority, 
             };
 
             try {
-                // Xử lý file đính kèm
-                if (file) { // Nếu có file mới được chọn
-                    // Xóa file cũ nếu đang sửa và có file cũ
+                if (file) { 
                     if (currentEditTaskId && currentTaskDataForEdit && currentTaskDataForEdit.attachmentPath) {
                         try {
                             const oldFileRef = storageRef(storage, currentTaskDataForEdit.attachmentPath);
                             await deleteObject(oldFileRef);
-                            console.log("Old attachment deleted from Storage during update.");
-                        } catch (delError) {
-                            console.warn("Could not delete old attachment during update:", delError);
-                            // Tiếp tục dù không xóa được file cũ
-                        }
+                        } catch (delError) { console.warn("Could not delete old attachment:", delError); }
                     }
-
-                    const uniqueFileName = `${Date.now()}-${file.name}`;
+                    const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
                     const filePath = `users/${currentUserId}/attachments/${uniqueFileName}`;
                     const fileRef = storageRef(storage, filePath);
-                    
                     await uploadBytes(fileRef, file);
                     const downloadURL = await getDownloadURL(fileRef);
-                    
-                    taskData.attachmentURL = downloadURL;
-                    taskData.attachmentPath = filePath; // Lưu path để xóa sau này
-                    taskData.attachmentType = file.type;
-                    taskData.attachmentName = file.name;
-                    console.log("File uploaded successfully:", downloadURL);
-
+                    taskDataToSave.attachmentURL = downloadURL;
+                    taskDataToSave.attachmentPath = filePath; 
+                    taskDataToSave.attachmentType = file.type;
+                    taskDataToSave.attachmentName = file.name;
                 } else if (currentEditTaskId && currentTaskDataForEdit) {
-                    // Nếu không có file mới, giữ lại thông tin file cũ (nếu có)
-                    // Trường hợp này đã được xử lý bằng cách không ghi đè nếu không có file mới,
-                    // và việc xóa file được xử lý riêng bởi nút "Remove Attachment"
-                    // Tuy nhiên, nếu muốn xóa file khi input file trống, logic sẽ khác
+                    // Giữ lại thông tin file cũ nếu không có file mới và không bị xóa
+                    if (currentTaskDataForEdit.attachmentURL !== undefined) taskDataToSave.attachmentURL = currentTaskDataForEdit.attachmentURL;
+                    if (currentTaskDataForEdit.attachmentPath !== undefined) taskDataToSave.attachmentPath = currentTaskDataForEdit.attachmentPath;
+                    if (currentTaskDataForEdit.attachmentType !== undefined) taskDataToSave.attachmentType = currentTaskDataForEdit.attachmentType;
+                    if (currentTaskDataForEdit.attachmentName !== undefined) taskDataToSave.attachmentName = currentTaskDataForEdit.attachmentName;
                 }
 
 
                 if (currentEditTaskId) { 
                     const taskRefFirestore = doc(db, tasksCollectionPath, currentEditTaskId);
-                    await updateDoc(taskRefFirestore, taskData); 
-                    console.log("Task updated successfully:", currentEditTaskId);
+                    await updateDoc(taskRefFirestore, taskDataToSave); 
                 } else { 
-                    taskData.status = 'todo'; 
-                    taskData.userId = currentUserId; 
-                    taskData.createdAt = Timestamp.now(); 
-                    await addDoc(collection(db, tasksCollectionPath), taskData);
-                    console.log("Task added successfully");
+                    taskDataToSave.status = 'todo'; 
+                    taskDataToSave.userId = currentUserId; 
+                    taskDataToSave.createdAt = Timestamp.now(); 
+                    taskDataToSave.order = Date.now(); // Gán order khi tạo mới
+                    await addDoc(collection(db, tasksCollectionPath), taskDataToSave);
                 }
                 closeAndResetModal();
             } catch (error) {
-                console.error("Error saving task: ", error);
                 alert("Lỗi khi lưu ghi chú: " + error.message); 
             } finally {
                 uploadSpinner.style.display = 'none';
@@ -766,8 +729,7 @@
         [taskInput, taskDueDateInput, taskPriorityInput].forEach(inputElement => {
             inputElement.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSaveTask();
+                    e.preventDefault(); handleSaveTask();
                 }
             });
         });
@@ -778,7 +740,7 @@
             if (!tasksCollectionPath) return;
             const taskRef = doc(db, tasksCollectionPath, taskId);
             try {
-                await updateDoc(taskRef, { status: newStatus });
+                await updateDoc(taskRef, { status: newStatus, order: Date.now() }); // Cập nhật order khi chuyển cột để về cuối
                 if (newStatus === 'done') triggerConfetti();
             } catch (error) {
                 alert("Lỗi khi di chuyển ghi chú: " + error.message);
@@ -793,16 +755,11 @@
             const tasksCollectionPath = getTasksCollectionPath();
             if (!tasksCollectionPath) return;
 
-            const q = query(collection(db, tasksCollectionPath), where("userId", "==", currentUserId));
-            tasksUnsubscribe = onSnapshot(q, (snapshot) => {
-                Object.values(columns).forEach(colDiv => {
-                    colDiv.innerHTML = ''; 
-                });
-                
-                snapshot.forEach((docSnap) => { // Đổi tên biến để tránh nhầm lẫn
-                    renderTask({ id: docSnap.id, ...docSnap.data() });
-                });
+            const q = query(collection(db, tasksCollectionPath), where("userId", "==", currentUserId), orderBy("order", "asc")); // Sắp xếp theo order
 
+            tasksUnsubscribe = onSnapshot(q, (snapshot) => {
+                Object.values(columns).forEach(colDiv => colDiv.innerHTML = ''); 
+                snapshot.forEach((docSnap) => renderTask({ id: docSnap.id, ...docSnap.data() }));
                 Object.entries(columns).forEach(([statusKey, columnDiv]) => {
                     if (columnDiv.children.length === 0) { 
                         const placeholder = document.createElement('div');
@@ -821,9 +778,7 @@
                 });
                  const firestoreErrorElement = document.querySelector('.firestore-error');
                 if (firestoreErrorElement) firestoreErrorElement.remove();
-            }, (error) => {
-                console.error(`Error loading tasks from ${tasksCollectionPath} for user ${currentUserId}: `, error);
-            });
+            }, (error) => console.error(`Error loading tasks: `, error));
         }
 
         function renderTask(task) {
@@ -832,6 +787,7 @@
             taskElement.setAttribute('draggable', true);
             taskElement.dataset.id = task.id;
             taskElement.dataset.status = task.status;
+            taskElement.dataset.order = task.order; // Lưu order vào data attribute
 
             if (task.priority) taskElement.classList.add(`priority-${task.priority}`);
             else taskElement.classList.add('priority-medium'); 
@@ -861,14 +817,13 @@
             deleteButton.onclick = async (e) => {
                 e.stopPropagation(); 
                 if (await showCustomConfirm("Bạn có chắc chắn muốn xóa ghi chú này không?")) {
-                    deleteTask(task.id, task.attachmentPath); // Truyền attachmentPath để xóa file
+                    deleteTask(task.id, task.attachmentPath); 
                 }
             };
             actionsContainer.appendChild(deleteButton);
             mainContent.appendChild(actionsContainer);
             taskElement.appendChild(mainContent);
 
-            // Hiển thị file đính kèm
             if (task.attachmentURL) {
                 if (task.attachmentType && task.attachmentType.startsWith('image/')) {
                     const imgPreview = document.createElement('img');
@@ -880,12 +835,11 @@
                     const fileLink = document.createElement('a');
                     fileLink.href = task.attachmentURL;
                     fileLink.textContent = task.attachmentName || "Xem file đính kèm";
-                    fileLink.target = "_blank"; // Mở trong tab mới
+                    fileLink.target = "_blank"; 
                     fileLink.classList.add('task-attachment-link');
                     taskElement.appendChild(fileLink);
                 }
             }
-
 
             const detailsContainer = document.createElement('div');
             detailsContainer.classList.add('w-full', 'flex', 'justify-between', 'items-center', 'flex-wrap', 'mb-1', 'mt-1'); 
@@ -951,66 +905,104 @@
             else columns.todo.appendChild(taskElement); 
         }
         
-        async function deleteTask(taskId, attachmentPath) { // Thêm attachmentPath
+        async function deleteTask(taskId, attachmentPath) { 
             if (!isAuthReady || !currentUserId) { alert("Bạn cần đăng nhập để xóa ghi chú."); return; }
             const tasksCollectionPath = getTasksCollectionPath();
             if (!tasksCollectionPath) return;
 
-            // Xóa file khỏi Storage trước (nếu có)
             if (attachmentPath) {
                 const fileRef = storageRef(storage, attachmentPath);
-                try {
-                    await deleteObject(fileRef);
-                    console.log("Attachment deleted from Storage:", attachmentPath);
-                } catch (error) {
-                    console.error("Error deleting attachment from Storage:", error);
-                    // Tiếp tục xóa task khỏi Firestore dù có lỗi xóa file
-                }
+                try { await deleteObject(fileRef); } 
+                catch (error) { console.error("Error deleting attachment from Storage:", error); }
             }
-
-            try { 
-                await deleteDoc(doc(db, tasksCollectionPath, taskId)); 
-                console.log("Task deleted from Firestore:", taskId);
-            } 
+            try { await deleteDoc(doc(db, tasksCollectionPath, taskId)); } 
             catch (error) { alert("Lỗi khi xóa ghi chú khỏi Firestore: " + error.message); }
         }
 
         let draggedItem = null;
         function handleDragStart(event) {
+            // ... (không thay đổi)
             if (!event.target.classList.contains('task')) return;
             draggedItem = event.target;
             event.dataTransfer.setData('text/plain', event.target.dataset.id);
             setTimeout(() => { if (draggedItem) draggedItem.classList.add('dragging'); }, 0);
         }
         columnElements.forEach(column => {
+            // ... (không thay đổi dragover, dragenter, dragleave)
             column.addEventListener('dragover', (e) => e.preventDefault());
             column.addEventListener('dragenter', (e) => e.target.closest('.kanban-column')?.classList.add('drag-over'));
             column.addEventListener('dragleave', (e) => e.target.closest('.kanban-column')?.classList.remove('drag-over'));
-            column.addEventListener('drop', handleDrop);
+            column.addEventListener('drop', handleDrop); // Sửa đổi handleDrop
         });
 
         async function handleDrop(event) {
             event.preventDefault();
             const targetColumnElement = event.target.closest('.kanban-column');
             if (!targetColumnElement || !draggedItem) return;
+
             targetColumnElement.classList.remove('drag-over');
-            draggedItem.classList.remove('dragging');
-            const taskId = draggedItem.dataset.id;
+            const draggedItemId = draggedItem.dataset.id;
+            const originalStatus = draggedItem.dataset.status;
             const newStatus = targetColumnElement.dataset.status;
-            const oldStatus = draggedItem.dataset.status;
-            if (newStatus === oldStatus) { draggedItem = null; return; }
-            if (!isAuthReady || !currentUserId) { draggedItem = null; return; }
+
+            draggedItem.classList.remove('dragging');
+            let newOrder;
+
             const tasksCollectionPath = getTasksCollectionPath();
             if (!tasksCollectionPath) { draggedItem = null; return; }
-            const taskRef = doc(db, tasksCollectionPath, taskId);
-            try {
-                await updateDoc(taskRef, { status: newStatus });
+            const taskRef = doc(db, tasksCollectionPath, draggedItemId);
+
+            if (originalStatus === newStatus) { // Reordering within the same column
+                const mouseY = event.clientY;
+                let nextSibling = null;
+                const currentColumnTasksDiv = columns[newStatus]; // e.g., todo-tasks div
+
+                for (const child of currentColumnTasksDiv.children) {
+                    if (child === draggedItem || !child.classList.contains('task')) continue;
+                    const rect = child.getBoundingClientRect();
+                    if (mouseY < rect.top + rect.height / 2) {
+                        nextSibling = child;
+                        break;
+                    }
+                }
+
+                if (nextSibling) {
+                    const orderOfNextSibling = parseFloat(nextSibling.dataset.order);
+                    let orderOfPrevSibling = 0; // Default if dropping at the very beginning
+
+                    // Find the actual previous sibling in DOM order to calculate new order
+                    let tempPrev = nextSibling.previousElementSibling;
+                    while(tempPrev && (tempPrev === draggedItem || !tempPrev.classList.contains('task'))) {
+                        tempPrev = tempPrev.previousElementSibling;
+                    }
+                    if (tempPrev) {
+                         orderOfPrevSibling = parseFloat(tempPrev.dataset.order);
+                    } else { // No valid previous sibling, means it's dropped at the beginning
+                        orderOfPrevSibling = orderOfNextSibling - 2000; // Ensure enough gap if it's the first
+                    }
+                    newOrder = (orderOfPrevSibling + orderOfNextSibling) / 2;
+
+                } else { // Dropped at the end of the list (or in an empty space below tasks)
+                    const allTasksInColumn = Array.from(currentColumnTasksDiv.children)
+                                               .filter(el => el.classList.contains('task') && el !== draggedItem)
+                                               .map(el => parseFloat(el.dataset.order))
+                                               .sort((a,b) => a - b);
+                    if (allTasksInColumn.length > 0) {
+                        newOrder = allTasksInColumn[allTasksInColumn.length - 1] + 1000;
+                    } else { // Column was empty or only contained the dragged item
+                        newOrder = Date.now();
+                    }
+                }
+                await updateDoc(taskRef, { order: newOrder });
+
+            } else { // Moving to a different column
+                newOrder = Date.now(); // Place at the end of the new column
+                await updateDoc(taskRef, { status: newStatus, order: newOrder });
                 if (newStatus === 'done') triggerConfetti();
-            } catch (error) {
-                alert("Lỗi khi cập nhật trạng thái ghi chú: " + error.message);
             }
-            draggedItem = null;
+            draggedItem = null; 
         }
+
 
         if(addTaskBtn) addTaskBtn.addEventListener('click', () => openTaskModal()); 
         if(fabAddTaskBtn) fabAddTaskBtn.addEventListener('click', () => openTaskModal());
@@ -1020,7 +1012,7 @@
             if (event.target == taskModal) closeAndResetModal();
         });
 
-
+        // ... (Confetti and CustomConfirm functions as before) ...
         const confettiCanvas = document.getElementById('confettiCanvas');
         const confettiCtx = confettiCanvas.getContext('2d');
         let confettiParticles = [];
@@ -1094,6 +1086,7 @@
                 confirmModal.appendChild(confirmContent); document.body.appendChild(confirmModal);
             });
         }
+
     </script>
 </body>
 </html>
